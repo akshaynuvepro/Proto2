@@ -170,7 +170,9 @@ data/langsmith/conversations/local/YYYY-MM-DD/*.md
 
 ---
 
-## Daily learning pipeline (after capture)
+## Learning pipeline (after capture)
+
+### One-shot
 
 ```sh
 # .env: LANGSMITH_API_KEY, OPENROUTER_API_KEY, optional ANALYSIS_MODEL
@@ -182,6 +184,26 @@ uv run python main.py skills
 ```
 
 `--source langsmith|local|all` (default `all`). Local extract **only reads** the MCP store.
+
+### Continuous worker
+
+Keeps the analysis layer running: polls the local capture store for changes and periodically re-extracts LangSmith, then re-classifies and updates skills.
+
+```sh
+uv run python main.py worker --project main
+```
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--interval` | `120` | Seconds between store polls |
+| `--debounce` | `20` | Wait until the store stops changing before running |
+| `--langsmith-interval` | `900` | Seconds between LangSmith extracts |
+| `--source` | `all` | `local` / `langsmith` / `all` |
+| `--no-run-on-start` | off | Skip the immediate first run |
+
+Env overrides: `WORKER_INTERVAL`, `WORKER_DEBOUNCE`, `WORKER_LANGSMITH_INTERVAL`.
+
+On each trigger the worker runs extract → classify → skills with `--force` so growing sessions rewrite markdown and skills stay current. Errors are logged; the loop keeps running. Ctrl+C to stop.
 
 ### Skill packages & routing
 

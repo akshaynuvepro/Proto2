@@ -94,6 +94,7 @@ temp/
 .tmp/
 *.tmp
 *.temp
+tmp-worker-*.txt
 *.swp
 *.swo
 *~
