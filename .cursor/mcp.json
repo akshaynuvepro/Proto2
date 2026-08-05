@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "proto-capture": {
+      "command": "proto-capture",
+      "args": ["mcp"]
+    }
+  }
+}

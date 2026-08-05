@@ -1,0 +1,31 @@
+{
+  "name": "proto-capture",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local coding-agent conversation capture MCP for Proto2 skill learning",
+  "type": "module",
+  "bin": {
+    "proto-capture": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "package.json",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "dev:mcp": "node --experimental-strip-types src/cli.ts mcp",
+    "install:local": "npm run build && npm install -g .",
+    "uninstall:local": "npm uninstall -g proto-capture"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.8.0"
+  }
+}

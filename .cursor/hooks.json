@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "proto-capture hook sessionStart"
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "proto-capture hook prompt"
+      }
+    ],
+    "afterAgentResponse": [
+      {
+        "command": "proto-capture hook response"
+      }
+    ],
+    "stop": [
+      {
+        "command": "proto-capture hook stop"
+      }
+    ]
+  }
+}

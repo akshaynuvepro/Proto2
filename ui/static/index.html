@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Proto2 Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #12181f;
+      --bg-elev: #1a222c;
+      --panel: #222c38;
+      --ink: #e7edf4;
+      --muted: #8b9aab;
+      --line: #2e3a49;
+      --accent: #3dbea0;
+      --accent-dim: #2a7f6c;
+      --warn: #e0a35a;
+      --danger: #d07676;
+      --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+      --sans: "DM Sans", sans-serif;
+      --display: "Fraunces", Georgia, serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font-family: var(--sans); }
+    body {
+      background-image:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(61,190,160,0.12), transparent 50%),
+        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(224,163,90,0.08), transparent 45%);
+    }
+    .shell { max-width: 1240px; margin: 0 auto; padding: 28px 22px 64px; }
+    header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
+    .brand { font-family: var(--display); font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+    .brand span { color: var(--accent); }
+    .sub { color: var(--muted); margin: 6px 0 0; font-size: 0.95rem; max-width: 42ch; }
+    .meta { color: var(--muted); font-size: 0.8rem; font-family: var(--mono); }
+    nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+    nav button {
+      background: transparent; border: 0; color: var(--muted); font: inherit; font-weight: 500;
+      padding: 8px 12px; border-radius: 6px; cursor: pointer;
+    }
+    nav button:hover { color: var(--ink); background: var(--bg-elev); }
+    nav button.active { color: var(--bg); background: var(--accent); }
+    .grid { display: grid; gap: 14px; }
+    .stats { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-bottom: 18px; }
+    .stat {
+      background: var(--bg-elev); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
+    }
+    .stat .k { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat .v { font-family: var(--display); font-size: 1.75rem; margin-top: 4px; }
+    .layout-2 { grid-template-columns: 1.1fr 1fr; gap: 16px; }
+    @media (max-width: 900px) { .layout-2 { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--bg-elev); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px;
+      min-height: 120px;
+    }
+    .panel h2 {
+      font-family: var(--display); font-size: 1.15rem; font-weight: 550; margin: 0 0 12px;
+    }
+    .bar-row { display: grid; grid-template-columns: minmax(8rem, 1fr) 3fr auto; gap: 10px; align-items: center; margin: 7px 0; font-size: 0.88rem; }
+    .bar-row .name { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-track { height: 8px; background: var(--panel); border-radius: 99px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--accent); border-radius: 99px; }
+    .bar-row .n { color: var(--muted); font-family: var(--mono); font-size: 0.8rem; text-align: right; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    tr:hover td { background: rgba(61,190,160,0.06); }
+    .pill {
+      display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600;
+      background: var(--panel); color: var(--muted); border: 1px solid var(--line);
+    }
+    .pill.new { color: var(--warn); border-color: rgba(224,163,90,0.4); }
+    .pill.local { color: var(--accent); border-color: rgba(61,190,160,0.35); }
+    button.linkish, .linkish {
+      background: none; border: 0; color: var(--accent); cursor: pointer; font: inherit; padding: 0; text-align: left;
+    }
+    button.linkish:hover { text-decoration: underline; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; align-items: center; }
+    select, input[type="search"] {
+      background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px;
+      padding: 8px 10px; font: inherit;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: stretch;
+      min-height: 70vh;
+    }
+    .split .list-panel, .split .detail-panel {
+      max-height: 75vh;
+      overflow: auto;
+    }
+    .list button.item {
+      display: block; width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line);
+      color: var(--ink); padding: 10px 8px; cursor: pointer; font: inherit;
+    }
+    .list button.item:hover, .list button.item.active { background: rgba(61,190,160,0.08); }
+    .list .t { font-weight: 600; font-size: 0.92rem; }
+    .list .d { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+    .back-btn {
+      display: none; background: var(--panel); border: 1px solid var(--line); color: var(--ink);
+      border-radius: 8px; padding: 8px 12px; font: inherit; cursor: pointer; margin-bottom: 12px;
+    }
+    .back-btn:hover { border-color: var(--accent); }
+    @media (max-width: 960px) {
+      .split { grid-template-columns: 1fr; min-height: 0; }
+      .split .list-panel, .split .detail-panel { max-height: none; }
+      .split.mobile-list .detail-panel { display: none; }
+      .split.mobile-detail .list-panel { display: none; }
+      .back-btn { display: inline-block; }
+    }
+    pre.raw {
+      white-space: pre-wrap; word-break: break-word; font-family: var(--mono); font-size: 0.8rem;
+      line-height: 1.45; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+      padding: 14px; margin: 0;
+    }
+    .md-prose {
+      font-family: var(--sans); font-size: 0.95rem; line-height: 1.55;
+      background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+      padding: 16px 18px; margin: 0; color: var(--ink);
+    }
+    .md-prose > :first-child { margin-top: 0; }
+    .md-prose > :last-child { margin-bottom: 0; }
+    .md-prose h1, .md-prose h2, .md-prose h3, .md-prose h4 {
+      font-family: var(--display); font-weight: 550; line-height: 1.25; margin: 1.25em 0 0.5em;
+    }
+    .md-prose h1 { font-size: 1.45rem; }
+    .md-prose h2 { font-size: 1.2rem; color: var(--accent); border-bottom: 1px solid var(--line); padding-bottom: 0.3em; }
+    .md-prose h3 { font-size: 1.05rem; }
+    .md-prose p { margin: 0.65em 0; }
+    .md-prose ul, .md-prose ol { margin: 0.5em 0 0.8em; padding-left: 1.4em; }
+    .md-prose li { margin: 0.3em 0; }
+    .md-prose li + li { margin-top: 0.35em; }
+    .md-prose strong { color: #fff; font-weight: 600; }
+    .md-prose a { color: var(--accent); }
+    .md-prose hr { border: 0; border-top: 1px solid var(--line); margin: 1.2em 0; }
+    .md-prose blockquote {
+      margin: 0.8em 0; padding: 0.4em 0 0.4em 0.9em; border-left: 3px solid var(--accent-dim);
+      color: var(--muted);
+    }
+    .md-prose code {
+      font-family: var(--mono); font-size: 0.85em; background: var(--panel);
+      padding: 0.12em 0.4em; border-radius: 4px;
+    }
+    .md-prose pre {
+      background: #0d1218; border: 1px solid var(--line); border-radius: 8px;
+      padding: 12px 14px; overflow: auto; margin: 0.8em 0;
+    }
+    .md-prose pre code { background: none; padding: 0; font-size: 0.82rem; }
+    .md-prose table { width: 100%; border-collapse: collapse; margin: 0.8em 0; font-size: 0.9rem; }
+    .md-prose th, .md-prose td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+    .md-prose th { color: var(--muted); font-weight: 500; }
+    .empty { color: var(--muted); padding: 24px 0; }
+    .err { color: #f0a0a0; padding: 20px; }
+    .bar-row.clickable { cursor: pointer; border-radius: 6px; padding: 2px 4px; }
+    .bar-row.clickable:hover { background: rgba(61,190,160,0.08); }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1 class="brand">Proto<span>2</span> Analyzer</h1>
+        <p class="sub">Live view of skills, classification, conversations, and MCP capture store.</p>
+      </div>
+      <div class="meta" id="generated">Loading…</div>
+    </header>
+    <nav id="nav">
+      <button data-tab="overview" class="active">Overview</button>
+      <button data-tab="skills">Skills</button>
+      <button data-tab="classification">Classification</button>
+      <button data-tab="conversations">Conversations</button>
+      <button data-tab="capture">Capture</button>
+    </nav>
+    <main id="app"><p class="empty">Loading data…</p></main>
+  </div>
+  <script>
+    const app = document.getElementById("app");
+    const generated = document.getElementById("generated");
+    let state = {
+      tab: "overview",
+      skillSlug: null,
+      skillMobileDetail: false,
+      convPath: null,
+      convMobileDetail: false,
+      classDate: null,
+      convDir: null,
+    };
+    let renderSeq = 0;
+
+    async function get(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`${res.status} ${url}`);
+      return res.json();
+    }
+
+    function renderMarkdown(el, source) {
+      if (!el) return;
+      const text = source || "";
+      if (typeof marked !== "undefined" && marked.parse) {
+        marked.setOptions({ gfm: true, breaks: false });
+        el.className = "md-prose";
+        el.innerHTML = marked.parse(text);
+        // Turn ```mermaid fences into live diagrams.
+        el.querySelectorAll("pre code.language-mermaid, pre code.mermaid").forEach((code, i) => {
+          const pre = code.closest("pre");
+          const wrap = document.createElement("div");
+          wrap.className = "mermaid";
+          wrap.textContent = code.textContent || "";
+          wrap.id = `mmd-${Date.now()}-${i}`;
+          pre.replaceWith(wrap);
+        });
+        if (typeof mermaid !== "undefined") {
+          try {
+            mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "loose" });
+            mermaid.run({ nodes: el.querySelectorAll(".mermaid") });
+          } catch (_) { /* ignore diagram errors */ }
+        }
+      } else {
+        el.className = "raw";
+        el.textContent = text;
+      }
+    }
+
+    function pills(items, cls = "") {
+      return (items || []).map((t) => `<span class="pill ${cls}">${esc(t)}</span>`).join(" ");
+    }
+
+    function bars(rows, nameKey, countKey, max, opts = {}) {
+      const m = max || Math.max(1, ...rows.map((r) => r[countKey]));
+      return rows.map((r) => {
+        const slug = opts.slugKey ? r[opts.slugKey] : "";
+        const attrs = slug
+          ? ` class="bar-row clickable" data-open-skill="${esc(slug)}"`
+          : ` class="bar-row"`;
+        return `
+        <div${attrs}>
+          <div class="name" title="${esc(r[nameKey])}">${esc(r[nameKey])}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(100 * r[countKey] / m).toFixed(1)}%"></div></div>
+          <div class="n">${r[countKey]}</div>
+        </div>`;
+      }).join("");
+    }
+
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
+    }
+
+    async function renderOverview() {
+      const o = await get("/api/overview");
+      generated.textContent = `Refreshed ${o.generatedAt}`;
+      const t = o.totals;
+      app.innerHTML = `
+        <div class="grid stats">
+          <div class="stat"><div class="k">Skills</div><div class="v">${t.skills}</div></div>
+          <div class="stat"><div class="k">Skill sessions</div><div class="v">${t.skillSessions}</div></div>
+          <div class="stat"><div class="k">Conv. files</div><div class="v">${t.conversationFiles}</div></div>
+          <div class="stat"><div class="k">Capture msgs</div><div class="v">${t.captureMessages}</div></div>
+        </div>
+        <div class="grid layout-2">
+          <section class="panel">
+            <h2>Top sandboxes by session count</h2>
+            <p class="meta" style="margin:-4px 0 10px">Click a row to open the skill</p>
+            ${bars(o.topSkills.map(s => ({ name: s.name, count: s.session_count, slug: s.slug })), "name", "count", null, { slugKey: "slug" })}
+          </section>
+          <section class="panel">
+            <h2>Conversation directories</h2>
+            ${o.conversationDirs.length
+              ? bars(o.conversationDirs.map(d => ({ name: d.label, count: d.count })), "name", "count")
+              : '<p class="empty">No conversation markdown yet.</p>'}
+            ${o.latestClassification ? `
+              <h2 style="margin-top:18px">Latest classification · ${esc(o.latestClassification.date)}</h2>
+              <p class="meta">${o.latestClassification.session_count} sessions · ${o.latestClassification.new_sandbox_assignments} marked new</p>
+              ${bars(o.latestClassification.by_slug.slice(0, 10).map(r => ({ name: r.name || r.slug, count: r.count })), "name", "count")}
+            ` : ""}
+          </section>
+        </div>`;
+    }
+
+    async function renderSkills() {
+      const seq = renderSeq;
+      const data = await get("/api/skills");
+      if (seq !== renderSeq) return;
+      if (!state.skillSlug && data.skills.length) state.skillSlug = data.skills[0].slug;
+      const detail = state.skillSlug ? await get(`/api/skills/${encodeURIComponent(state.skillSlug)}`) : null;
+      if (seq !== renderSeq) return;
+      const mode = state.skillMobileDetail ? "mobile-detail" : "mobile-list";
+      app.innerHTML = `
+        <div class="split ${mode}">
+          <section class="panel list list-panel">
+            <h2>Skills (${data.skills.length})</h2>
+            <p class="meta" style="margin:-6px 0 10px">Select a skill to read its SKILL.md</p>
+            ${data.skills.map(s => `
+              <button type="button" class="item ${s.slug === state.skillSlug ? "active" : ""}" data-open-skill="${esc(s.slug)}">
+                <div class="t">${esc(s.name)}</div>
+                <div class="d">${s.session_count} sessions · ${esc(s.last_active_date || "-")}${s.has_references ? " · refs" : ""}${s.has_scripts ? " · scripts" : ""}</div>
+              </button>`).join("")}
+          </section>
+          <section class="panel detail-panel" id="skill-detail">
+            <button type="button" class="back-btn" data-skill-back>Back to list</button>
+            ${detail ? `
+              <h2>${esc(detail.frontmatter.display_name || detail.slug)}</h2>
+              <p class="meta" style="margin:8px 0"><strong>Router description</strong> (what agents match on)</p>
+              <p>${esc(detail.frontmatter.description || "")}</p>
+              <p class="meta" style="margin:10px 0 6px">Triggers</p>
+              <div>${pills(detail.frontmatter.triggers) || '<span class="meta">none yet — next skills run will fill these</span>'}</div>
+              <p class="meta" style="margin:10px 0 6px">Tags · Tools</p>
+              <div>${pills(detail.frontmatter.tags, "local")} ${pills(detail.frontmatter.tools)}</div>
+              <p class="meta" style="margin:12px 0">${detail.frontmatter.session_count ?? "?"} sessions · last ${esc(detail.frontmatter.last_active_date || "-")} · package: ${(detail.package?.layout || []).join(", ")}</p>
+              <p class="meta" style="margin-bottom:12px">${esc(detail.package?.router_hint || "")}</p>
+              <h2>SKILL.md</h2>
+              <div id="skill-body"></div>
+              ${(detail.references || []).map((r, i) => `
+                <h2 style="margin-top:18px">references/${esc(r.name)}</h2>
+                <div id="skill-ref-${i}"></div>`).join("")}
+              ${(detail.scripts || []).map((s, i) => `
+                <h2 style="margin-top:18px">scripts/${esc(s.name)}</h2>
+                <pre class="raw" id="skill-script-${i}"></pre>`).join("")}
+              ${detail.analysis ? `<h2 style="margin-top:18px">Analysis skill</h2><div id="skill-analysis"></div>` : ""}
+            ` : '<p class="empty">Select a skill.</p>'}
+          </section>
+        </div>`;
+      if (detail) {
+        renderMarkdown(document.getElementById("skill-body"), detail.body || "");
+        (detail.references || []).forEach((r, i) => renderMarkdown(document.getElementById(`skill-ref-${i}`), r.body || ""));
+        (detail.scripts || []).forEach((s, i) => {
+          const el = document.getElementById(`skill-script-${i}`);
+          if (el) el.textContent = s.body || "";
+        });
+        if (detail.analysis) {
+          renderMarkdown(document.getElementById("skill-analysis"), detail.analysis.body || "");
+        }
+      }
+    }
+
+    async function renderClassification() {
+      const overview = await get("/api/overview");
+      const dates = overview.classificationDates || [];
+      if (!dates.length) {
+        app.innerHTML = '<p class="empty">No classification audits yet. Run <code>uv run python main.py classify</code>.</p>';
+        return;
+      }
+      if (!state.classDate || !dates.includes(state.classDate)) state.classDate = dates[0];
+      const data = await get(`/api/classification/${encodeURIComponent(state.classDate)}`);
+      const q = (document.getElementById("class-q")?.value || "").toLowerCase();
+      const rows = data.sessions.filter((r) =>
+        !q || r.slug.includes(q) || r.name.toLowerCase().includes(q) || r.session_id.includes(q) || (r.reasoning || "").toLowerCase().includes(q)
+      );
+      app.innerHTML = `
+        <div class="toolbar">
+          <label class="meta">Date
+            <select id="class-date">${dates.map(d => `<option value="${esc(d)}" ${d === state.classDate ? "selected" : ""}>${esc(d)}</option>`).join("")}</select>
+          </label>
+          <input id="class-q" type="search" placeholder="Filter sessions…" value="${esc(q)}" style="min-width:220px" />
+          <span class="meta">${data.session_count} sessions · ${data.new_sandbox_assignments} new assignments</span>
+        </div>
+        <div class="grid layout-2" style="margin-bottom:14px">
+          <section class="panel">
+            <h2>By sandbox</h2>
+            ${bars(data.by_slug.slice(0, 20).map(r => ({ name: r.name || r.slug, count: r.count })), "name", "count")}
+          </section>
+          <section class="panel">
+            <h2>By source</h2>
+            ${data.by_source.length ? bars(data.by_source.map(r => ({ name: r.source, count: r.count })), "name", "count") : '<p class="empty">No source field (legacy audit).</p>'}
+          </section>
+        </div>
+        <section class="panel" style="overflow:auto">
+          <h2>Session assignments (${rows.length})</h2>
+          <table>
+            <thead><tr><th>Sandbox</th><th>Session</th><th>Source</th><th>Flags</th><th>Reasoning</th></tr></thead>
+            <tbody>
+              ${rows.slice(0, 400).map(r => `
+                <tr>
+                  <td><button class="linkish" data-goto-skill="${esc(r.slug)}">${esc(r.name)}</button></td>
+                  <td class="meta">${esc(r.session_id.slice(0, 18))}…</td>
+                  <td><span class="pill ${r.source !== "langsmith" ? "local" : ""}">${esc(r.source)}</span></td>
+                  <td>${r.is_new ? '<span class="pill new">new</span>' : ""}</td>
+                  <td>${esc(r.reasoning)}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </section>`;
+      document.getElementById("class-date").addEventListener("change", (e) => { state.classDate = e.target.value; render(); });
+      document.getElementById("class-q").addEventListener("input", () => renderClassification());
+    }
+
+    async function renderConversations() {
+      const dirQ = state.convDir ? `?dir=${encodeURIComponent(state.convDir)}` : "";
+      const data = await get(`/api/conversations${dirQ}`);
+      if (!state.convPath && data.conversations.length) state.convPath = data.conversations[0].path;
+      const detail = state.convPath ? await get(`/api/conversation?path=${encodeURIComponent(state.convPath)}`) : null;
+      const mode = state.convMobileDetail ? "mobile-detail" : "mobile-list";
+      app.innerHTML = `
+        <div class="toolbar">
+          <label class="meta">Directory
+            <select id="conv-dir">
+              <option value="">All</option>
+              ${data.dirs.map(d => `<option value="${esc(d)}" ${d === state.convDir ? "selected" : ""}>${esc(d)}</option>`).join("")}
+            </select>
+          </label>
+          <span class="meta">${data.conversations.length} shown</span>
+        </div>
+        <div class="split ${mode}">
+          <section class="panel list list-panel">
+            <h2>Conversations</h2>
+            ${data.conversations.map(c => `
+              <button type="button" class="item ${c.path === state.convPath ? "active" : ""}" data-open-conv="${esc(c.path)}">
+                <div class="t">${esc(c.session_id)}</div>
+                <div class="d">${esc(c.label)} · ${c.turn_count} turns · ${esc(c.source)}</div>
+              </button>`).join("") || '<p class="empty">No conversations.</p>'}
+          </section>
+          <section class="panel detail-panel">
+            <button type="button" class="back-btn" data-conv-back>Back to list</button>
+            ${detail ? `
+              <h2>${esc(detail.frontmatter.session_id || detail.path)}</h2>
+              <p class="meta">${esc(detail.path)} · source ${esc(detail.frontmatter.source || "-")} · ${detail.frontmatter.turn_count || "?"} turns</p>
+              <div id="conv-body" style="margin-top:12px"></div>
+            ` : '<p class="empty">Select a conversation.</p>'}
+          </section>
+        </div>`;
+      if (detail) {
+        // Transcripts are mostly plain text with role tags; wrap as markdown code-friendly prose.
+        const body = detail.body || "";
+        const looksMd = /^#|\*\*|```|^\s*[-*]\s/m.test(body);
+        if (looksMd) renderMarkdown(document.getElementById("conv-body"), body);
+        else {
+          const el = document.getElementById("conv-body");
+          if (el) { el.className = "raw"; el.textContent = body; }
+        }
+      }
+      document.getElementById("conv-dir").addEventListener("change", (e) => {
+        state.convDir = e.target.value || null;
+        state.convPath = null;
+        state.convMobileDetail = false;
+        render();
+      });
+    }
+
+    async function renderCapture() {
+      const data = await get("/api/capture");
+      if (!data.exists) {
+        app.innerHTML = `<section class="panel"><h2>MCP capture store</h2>
+          <p class="empty">No <code>data/capture/conversations.json</code> yet. Configure proto-capture MCP + use a coding agent; messages appear here automatically.</p></section>`;
+        return;
+      }
+      const toolRows = Object.entries(data.byTool || {}).map(([name, count]) => ({ name, count }));
+      const dayRows = Object.entries(data.byDay || {}).map(([name, count]) => ({ name, count })).sort((a,b) => b.name.localeCompare(a.name));
+      app.innerHTML = `
+        <div class="grid stats">
+          <div class="stat"><div class="k">Messages</div><div class="v">${data.count}</div></div>
+          <div class="stat"><div class="k">Updated</div><div class="v" style="font-size:1rem;margin-top:10px">${esc((data.updatedAt || "").slice(0,19))}</div></div>
+        </div>
+        <div class="grid layout-2" style="margin-bottom:14px">
+          <section class="panel"><h2>By tool</h2>${bars(toolRows, "name", "count")}</section>
+          <section class="panel"><h2>By day</h2>${bars(dayRows.slice(0, 14), "name", "count")}</section>
+        </div>
+        <section class="panel" style="overflow:auto">
+          <h2>Recent messages (last ${data.messages.length})</h2>
+          <table>
+            <thead><tr><th>When</th><th>Tool</th><th>Role</th><th>Session</th><th>Text</th></tr></thead>
+            <tbody>
+              ${[...data.messages].reverse().slice(0, 200).map(m => `
+                <tr>
+                  <td class="meta">${esc((m.ts || "").slice(0,19))}</td>
+                  <td><span class="pill local">${esc(m.tool)}</span></td>
+                  <td>${esc(m.role)}</td>
+                  <td class="meta">${esc(String(m.sessionId || "").slice(0,12))}</td>
+                  <td>${esc(String(m.text || "").slice(0,220))}${String(m.text||"").length > 220 ? "…" : ""}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </section>`;
+    }
+
+    function syncNav() {
+      document.querySelectorAll("#nav button").forEach((b) => b.classList.toggle("active", b.dataset.tab === state.tab));
+    }
+
+    async function render() {
+      const seq = ++renderSeq;
+      syncNav();
+      try {
+        if (state.tab === "overview") await renderOverview();
+        else if (state.tab === "skills") await renderSkills();
+        else if (state.tab === "classification") await renderClassification();
+        else if (state.tab === "conversations") await renderConversations();
+        else if (state.tab === "capture") await renderCapture();
+      } catch (e) {
+        if (seq !== renderSeq) return;
+        app.innerHTML = `<p class="err">${esc(e.message)}</p>`;
+      }
+    }
+
+    document.getElementById("nav").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-tab]");
+      if (!btn) return;
+      state.tab = btn.dataset.tab;
+      if (state.tab === "skills") state.skillMobileDetail = false;
+      if (state.tab === "conversations") state.convMobileDetail = false;
+      render();
+    });
+
+    // Event delegation so skill/conversation opens always work after re-render.
+    document.body.addEventListener("click", (e) => {
+      const skill = e.target.closest("[data-open-skill]");
+      if (skill) {
+        state.skillSlug = skill.getAttribute("data-open-skill");
+        state.tab = "skills";
+        state.skillMobileDetail = true;
+        render();
+        return;
+      }
+      if (e.target.closest("[data-skill-back]")) {
+        state.skillMobileDetail = false;
+        render();
+        return;
+      }
+      const conv = e.target.closest("[data-open-conv]");
+      if (conv) {
+        state.convPath = conv.getAttribute("data-open-conv");
+        state.convMobileDetail = true;
+        render();
+        return;
+      }
+      if (e.target.closest("[data-conv-back]")) {
+        state.convMobileDetail = false;
+        render();
+        return;
+      }
+      const goto = e.target.closest("[data-goto-skill]");
+      if (goto) {
+        state.skillSlug = goto.getAttribute("data-goto-skill");
+        state.tab = "skills";
+        state.skillMobileDetail = true;
+        render();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
