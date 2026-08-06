@@ -134,3 +134,6 @@ $RECYCLE.BIN/
 .direnv/
 .fleet/
 .history/
+
+skills-mcp/node_modules/
+skills-mcp/dist/

@@ -3,6 +3,10 @@
     "proto-capture": {
       "command": "proto-capture",
       "args": ["mcp"]
+    },
+    "proto-skills": {
+      "command": "proto-skills",
+      "args": ["mcp"]
     }
   }
 }

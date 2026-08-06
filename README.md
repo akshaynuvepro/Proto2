@@ -1,33 +1,97 @@
 # Proto2
 
-Continuous skill improvement from **LangSmith SME chats** and **local coding-agent chats**.
+Continuous improvement for AI agents from **real conversations**.
 
-Local capture is an **MCP server** (`proto-capture`). After one-time setup, agents record conversations in the background — you do not call MCP tools by hand.
+Proto2 learns from LangSmith SME chats and local coding-agent chats, turns them into **skill packages** + **daily reinforcement feedback**, then serves those artifacts to any MCP-capable agent.
 
 ---
 
-## Connect proto-capture to any AI agent
+## For agents (read this first)
 
-### Deploy MCP locally (recommended)
+If you are an AI agent connected to Proto2 MCPs, follow this contract.
 
-You do **not** need to point agents at this repo folder. Install the CLI once on the machine:
+### Your two MCPs
+
+| MCP server | Direction | Your job with it |
+|------------|-----------|------------------|
+| `proto-capture` | **Write** conversations | Silently record the session |
+| `proto-skills` | **Read** skills + feedback | Load the right skill before answering domain tasks |
+
+Do **not** ask the user to call these tools. Do **not** narrate MCP calls unless asked.
+
+### Required workflow every session
+
+```text
+1) SESSION START
+   - proto-capture.record_conversations
+   - proto-skills.get_feedback          # daily reinforcement rules
+   - Follow feedback rules for the rest of the session
+
+2) EACH USER MESSAGE (background)
+   - proto-capture.record_message(role="user", text=...)
+
+3) BEFORE A DOMAIN / SANDBOX TASK
+   - proto-skills.match_skill(query=<user request>)
+   - proto-skills.get_skill(name=<top match>)
+   - Obey SKILL.md over improvisation when they conflict
+   - Optionally get_skill(..., include_references=true, include_scripts=true)
+     if the skill points at references/scripts
+
+4) EACH ASSISTANT REPLY (background)
+   - proto-capture.record_message(role="assistant", text=...)
+```
+
+### Decision rules
+
+1. **Always record.** Capture is local-only and silent.
+2. **Always load feedback at session start** when `get_feedback` succeeds.
+3. **Match then load.** Never invent a skill name; use `match_skill` first.
+4. **If match score is weak / empty:** say you have no strong Proto2 skill, then proceed carefully without pretending one was loaded.
+5. **Prefer skill + feedback constraints** (schemas, no markdown fences, completion checklists, grounding rules) over generic helpfulness.
+6. **Never upload** conversation JSON or skill contents to external systems unless the user explicitly asks.
+
+### Quick self-check tools
+
+| Tool | Server | Use when |
+|------|--------|----------|
+| `conversation_status` | `proto-capture` | Verify recording path/count |
+| `skills_status` | `proto-skills` | Verify catalog + feedback availability |
+| `list_skills` | `proto-skills` | Browse available skills |
+
+### Example (conceptual)
+
+User: “Recommend a US health plan for a diabetic Texas member.”
+
+1. `match_skill(query="Recommend a US health plan for a diabetic Texas member")`
+2. Expect top hit like `medibuddy-health-plan-advisor`
+3. `get_skill(name="medibuddy-health-plan-advisor")`
+4. Execute that skill’s workflow and output contract exactly
+5. Keep recording user/assistant turns via `proto-capture`
+
+---
+
+## Human setup (one-time)
+
+### Install both CLIs
 
 ```sh
 cd Proto2/capture
 npm install
 npm run install:local
+
+cd ../skills-mcp
+npm install
+npm run install:local
 ```
 
-That builds and installs a global `proto-capture` command. Check:
+Check:
 
 ```sh
-proto-capture --version
-proto-capture doctor
+proto-capture --version && proto-capture doctor
+proto-skills --version && proto-skills doctor
 ```
 
-### Generic MCP config (any host)
-
-Any client that supports **MCP over stdio**:
+### MCP config (any host)
 
 ```json
 {
@@ -35,65 +99,115 @@ Any client that supports **MCP over stdio**:
     "proto-capture": {
       "command": "proto-capture",
       "args": ["mcp"]
+    },
+    "proto-skills": {
+      "command": "proto-skills",
+      "args": ["mcp"]
     }
   }
 }
 ```
 
-No project paths. Reload the host’s MCP after `install:local`.
+This repo’s Cursor config is already set in [`.cursor/mcp.json`](.cursor/mcp.json).
 
-| MCP tool | Purpose |
-|---|---|
+Reload the host MCP after install. Enable both servers in the host UI if needed.
+
+### Install silent agent skills (recommended)
+
+```sh
+proto-capture skill install --force
+proto-skills skill install --force
+```
+
+These teach assistants to call the MCPs automatically.
+
+---
+
+## MCP reference
+
+### `proto-capture` — upload / record
+
+| Tool | Purpose |
+|------|---------|
 | `record_conversations` | Snapshot Claude / Codex / OpenCode / Gemini local stores into JSON |
 | `record_message` | Append one live user/assistant/system turn |
-| `conversation_status` | Path, counts, last update |
+| `conversation_status` | Show store path, counts, last update |
 
-**Store**
+**Store locations**
 
 | Mode | Path |
-|---|---|
+|------|------|
 | Global install | `~/.proto-capture/conversations.json` |
-| Dev (running from this repo) | `Proto2/data/capture/conversations.json` |
+| Dev (this repo) | `Proto2/data/capture/conversations.json` |
 | Override | `PROTO_CAPTURE_STORE=<absolute-path>` |
 
-Nothing is uploaded. Recording is local-only.
+On MCP connect, the server best-effort snapshots existing agent logs once. Nothing is uploaded.
 
-**On connect:** the server best-effort snapshots existing agent logs once.
-
-Smoke-test without an agent:
+Smoke:
 
 ```sh
 proto-capture status
 node capture/scripts/mcp-smoke.mjs
 ```
 
+### `proto-skills` — consume skills + feedback
+
+| Tool | Purpose |
+|------|---------|
+| `list_skills` | Catalog summary (name, description, triggers, tags) |
+| `match_skill` | Rank skills for a query |
+| `get_skill` | Load `SKILL.md` (+ optional references/scripts) |
+| `get_feedback` | Daily reinforcement markdown (default: today, else latest) |
+| `skills_status` | Skills/feedback paths and counts |
+
+**Data locations**
+
+| Artifact | Path |
+|----------|------|
+| Skill catalog | `data/skills/catalog.json` |
+| Skill packages | `data/skills/<slug>/SKILL.md` |
+| Daily feedback | `data/langsmith/feedback/YYYY-MM-DD.md` |
+
+Overrides: `PROTO_SKILLS_ROOT`, `PROTO_FEEDBACK_ROOT`.
+
+CLI helpers (no MCP needed):
+
+```sh
+proto-skills status
+proto-skills list
+proto-skills match --query "recommend a US health plan for a diabetic member"
+proto-skills get --name medibuddy-health-plan-advisor
+proto-skills feedback
+```
+
 ---
+
+## Host-specific notes
 
 ### Cursor
 
-1. Run `npm run install:local` in `capture/` (above).
-2. [`.cursor/mcp.json`](.cursor/mcp.json) already uses `"command": "proto-capture"`.
-3. **Cursor Settings → MCP** → enable `proto-capture` → reload window if needed.
-4. Optional: enable **Hooks** ([`.cursor/hooks.json`](.cursor/hooks.json) uses `proto-capture hook …`).
-5. Install the silent-recording skill:
+1. `npm run install:local` in `capture/` and `skills-mcp/`
+2. [`.cursor/mcp.json`](.cursor/mcp.json) already lists both servers
+3. **Settings → MCP** → enable `proto-capture` and `proto-skills` → reload if needed
+4. Optional hooks: [`.cursor/hooks.json`](.cursor/hooks.json) (`proto-capture hook …`)
+5. Install silent skills:
 
 ```sh
 proto-capture skill install --force
+proto-skills skill install --force
 ```
 
-**Verify:** ask the agent to call `conversation_status`.
-
----
+Verify by asking the agent to call `conversation_status` and `skills_status`.
 
 ### Claude Code
 
 ```sh
 claude mcp add proto-capture -- proto-capture mcp
+claude mcp add proto-skills -- proto-skills mcp
 proto-capture skill install --claude --force
+proto-skills skill install --claude --force
 claude mcp list
 ```
-
----
 
 ### Codex CLI
 
@@ -101,76 +215,40 @@ claude mcp list
 [mcp_servers.proto-capture]
 command = "proto-capture"
 args = ["mcp"]
+
+[mcp_servers.proto-skills]
+command = "proto-skills"
+args = ["mcp"]
 ```
 
 ```sh
 proto-capture skill install --codex --force
+proto-skills skill install --codex --force
 ```
 
----
+### Gemini CLI / other hosts
 
-### Gemini CLI
-
-Same MCP block as the [generic config](#generic-mcp-config-any-host), then:
-
-```sh
-proto-capture skill install --gemini --force
-```
-
----
-
-### Other agents (Windsurf, Continue, custom apps, etc.)
-
-Use the [generic config](#generic-mcp-config-any-host). Checklist:
-
-1. `npm run install:local` so `proto-capture` is on `PATH`
-2. MCP: `command=proto-capture`, `args=["mcp"]`
-3. Reload host → confirm three tools appear
-4. `proto-capture skill install --force` for silent recording
-
-Stdio MCP only (no remote HTTP deploy in this package).
-
----
-
-### Background recording (so users never call MCP manually)
-
-| Layer | What it does |
-|---|---|
-| **MCP on connect** | Auto-snapshots Claude/Codex/OpenCode/Gemini disk stores |
-| **Agent Skill** | Mandates silent `record_conversations` / `record_message` every session |
-| **Cursor hooks** | Records prompts/responses even if the model forgets tool calls |
-
-Install skill for all supported assistants:
+Use the [generic MCP config](#mcp-config-any-host), then:
 
 ```sh
 proto-capture skill install --force
+proto-skills skill install --force
 ```
+
+Checklist:
+
+1. Both CLIs on `PATH` (`install:local`)
+2. Both MCP servers configured with `args: ["mcp"]`
+3. Host shows tools from both servers
+4. Silent skills installed
+
+Stdio MCP only (no remote HTTP deploy in these packages).
 
 ---
 
-### Verify end-to-end
+## Learning pipeline (produces what agents consume)
 
-```sh
-# 1) MCP protocol + tools + store write
-node capture/scripts/mcp-smoke.mjs
-
-# 2) Store status
-proto-capture status
-
-# 3) After chatting with a connected agent, materialize today's local MD
-uv run python main.py extract --source local
-```
-
-You should see files under:
-
-```text
-data/capture/conversations.json
-data/langsmith/conversations/local/YYYY-MM-DD/*.md
-```
-
----
-
-## Learning pipeline (after capture)
+Humans/operators run this. Serving agents usually only **consume** via `proto-skills`.
 
 ### One-shot
 
@@ -183,44 +261,39 @@ uv run python main.py classify
 uv run python main.py skills
 ```
 
-`--source langsmith|local|all` (default `all`). Local extract **only reads** the MCP store.
+`--source langsmith|local|all` (default `all`). Local extract only reads the MCP capture store.
 
 ### Continuous worker
-
-Keeps the analysis layer running: polls the local capture store for changes and periodically re-extracts LangSmith, then re-classifies and updates skills.
 
 ```sh
 uv run python main.py worker --project main
 ```
 
 | Flag | Default | Meaning |
-|---|---|---|
+|------|---------|---------|
 | `--interval` | `120` | Seconds between store polls |
-| `--debounce` | `20` | Wait until the store stops changing before running |
+| `--debounce` | `20` | Wait until store stops changing |
 | `--langsmith-interval` | `900` | Seconds between LangSmith extracts |
 | `--source` | `all` | `local` / `langsmith` / `all` |
-| `--no-run-on-start` | off | Skip the immediate first run |
+| `--no-run-on-start` | off | Skip immediate first run |
 
 Env overrides: `WORKER_INTERVAL`, `WORKER_DEBOUNCE`, `WORKER_LANGSMITH_INTERVAL`.
 
-On each trigger the worker runs extract → classify → skills with `--force` so growing sessions rewrite markdown and skills stay current. Errors are logged; the loop keeps running. Ctrl+C to stop.
+Each trigger runs extract → classify → skills with `--force`.
 
-### Skill packages & routing
+### What gets written for agents
 
 ```text
-data/skills/catalog.json                 # agent router catalog
+data/skills/catalog.json                 # router catalog
 data/skills/<slug>/
-  SKILL.md                               # description + triggers + tags + tools
-  references/                            # mermaid workflows, output contracts
+  SKILL.md                               # operating instructions for that sandbox/domain
+  references/                            # workflows / contracts
   scripts/                               # validators / helpers
-  analysis-skill/SKILL.md
+data/langsmith/feedback/YYYY-MM-DD.md    # next-day reinforcement feedback
+data/langsmith/conversations/...         # extracted session transcripts
 ```
 
-How a serving agent should pick a skill:
-
-1. Load `data/skills/catalog.json`
-2. Match the sandbox request to **description / triggers / tags**
-3. Open that skill’s `SKILL.md`, then `references/` and `scripts/` as linked
+Rebuild catalog only:
 
 ```sh
 uv run python rebuild_catalog.py
@@ -240,24 +313,58 @@ Open [http://127.0.0.1:8765](http://127.0.0.1:8765) for skills, classification, 
 
 ## Privacy
 
-- Conversation JSON stays on disk under Proto2 `data/` (or `PROTO_CAPTURE_STORE`).
+- Conversation JSON stays on disk (`PROTO_CAPTURE_STORE` or defaults above).
+- Skills/feedback are local filesystem artifacts.
 - No leaderboard / upload path in this project.
-- The daily pipeline may send conversation bundles to OpenRouter for analysis (same as before).
+- The learning pipeline may send conversation bundles to OpenRouter for analysis when configured.
 
 ---
 
 ## Troubleshooting
 
 | Symptom | Fix |
-|---|---|
-| MCP not listed in Cursor | Run `npm run install:local`; enable server in Settings → MCP; reload window |
-| `proto-capture` not found | `cd capture && npm run install:local` (needs Node on PATH) |
-| Tools missing | Confirm args are `["mcp"]`; check host MCP logs |
-| Store empty after chatting | Install skill + (in Cursor) enable hooks; confirm MCP shows connected |
+|---------|-----|
+| MCP not listed in Cursor | `install:local` both packages; enable both servers; reload window |
+| `proto-capture` / `proto-skills` not found | Ensure Node is on `PATH`; re-run `npm run install:local` |
+| Only one MCP appears | Add both blocks to host MCP config |
+| Capture store empty | Install capture skill + Cursor hooks; confirm MCP connected |
+| `match_skill` returns nothing useful | Rebuild catalog; check `proto-skills status` skillCount > 0 |
+| `get_feedback` missing today | Normal if feedback not generated yet; tool falls back to latest date |
 | OpenCode sessions missing | Use Node 22.13+ (SQLite) |
-| Wrong store path | `proto-capture doctor`; set `PROTO_CAPTURE_STORE` if you need a custom file |
+| Wrong paths | `proto-capture doctor` / `proto-skills doctor`; set env overrides |
 
 ```sh
 proto-capture doctor
 proto-capture status
+proto-skills doctor
+proto-skills status
+```
+
+---
+
+## End-to-end verify
+
+```sh
+# Capture MCP
+node capture/scripts/mcp-smoke.mjs
+proto-capture status
+
+# Skills MCP
+proto-skills status
+proto-skills match --query "UK energy REC MHHS flow"
+proto-skills get --name utilityflow-uk-energy-rag
+proto-skills feedback
+
+# After chatting with a connected agent, materialize today's local MD
+uv run python main.py extract --source local
+```
+
+Expected artifacts:
+
+```text
+data/capture/conversations.json
+data/skills/catalog.json
+data/skills/<slug>/SKILL.md
+data/langsmith/feedback/YYYY-MM-DD.md
+data/langsmith/conversations/.../*.md
 ```
