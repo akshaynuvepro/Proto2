@@ -2,7 +2,7 @@
   "name": "proto-capture",
   "version": "0.1.0",
   "private": true,
-  "description": "Local coding-agent conversation capture MCP for Proto2 skill learning",
+  "description": "Agent-agnostic conversation capture MCP for Proto2 — attach to any MCP host",
   "type": "module",
   "bin": {
     "proto-capture": "dist/cli.js"

@@ -57,7 +57,8 @@ async function main(): Promise<void> {
     const store = appendLiveMessage({
       text,
       role: (flag("role") as "user" | "assistant" | "system" | undefined) ?? "user",
-      tool: (flag("tool") as "claude" | "codex" | "opencode" | "gemini" | "live" | undefined) ?? "live",
+      // Any agent/host id — not limited to known CLI names.
+      tool: flag("tool") ?? flag("agent") ?? "live",
       sessionId: flag("session") ?? "live",
       path: flag("out"),
     });
@@ -146,12 +147,15 @@ Commands:
   status [--out p]    Show store path and counts
   record [--out p]    Debug: snapshot agent stores into JSON
   append --text t     Debug/hooks: append one live message
+                      [--role user|assistant|system] [--tool|--agent <any-id>]
   hook <mode>         Cursor hook entry (sessionStart|prompt|response|stop)
-  skill install       Install Agent Skill for Claude/Codex/Gemini
+  skill install       Optional Agent Skill for Claude/Codex/Gemini (any host can use MCP without this)
   doctor              Show paths + copy-paste MCP config
 
 Env:
   PROTO_CAPTURE_STORE   Override conversations.json path
+
+Agent-agnostic: attach MCP to any host; live capture uses record_message (tool/agent = any string).
 `);
 }
 

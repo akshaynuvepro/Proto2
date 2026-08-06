@@ -5,15 +5,24 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { collectSessionMessages, type Rec, type SessionMsg } from "./usage.ts";
 
+/** Agent/host id for a message. Known CLI snapshots use claude|codex|opencode|gemini; live capture accepts any string. */
+export type AgentId = Rec["tool"] | "live" | (string & {});
+
 export interface StoredMessage {
   id: string;
   ts: string;
   day: string;
-  tool: Rec["tool"] | "live";
+  tool: AgentId;
   sessionId: string;
   role: "user" | "assistant" | "system";
   text: string;
   source: "snapshot" | "live";
+}
+
+/** Normalize free-form agent/host names from any MCP client. */
+export function normalizeAgentId(raw?: string): string {
+  const s = (raw ?? "").trim().toLowerCase().replace(/[^a-z0-9._+-]+/g, "-").replace(/^-+|-+$/g, "");
+  return s || "live";
 }
 
 export interface ConversationStore {
@@ -130,7 +139,8 @@ export async function snapshotConversations(path = storePath()): Promise<Convers
 export function appendLiveMessage(input: {
   text: string;
   role?: "user" | "assistant" | "system";
-  tool?: Rec["tool"] | "live";
+  /** Any agent/host name (cursor, claude, copilot, windsurf, custom, …). */
+  tool?: string;
   sessionId?: string;
   ts?: string;
   path?: string;
@@ -141,7 +151,7 @@ export function appendLiveMessage(input: {
   const store = readStore(path);
   const ts = input.ts && !Number.isNaN(Date.parse(input.ts)) ? new Date(input.ts).toISOString() : new Date().toISOString();
   const base = {
-    tool: input.tool ?? "live",
+    tool: normalizeAgentId(input.tool),
     sessionId: input.sessionId?.trim() || "live",
     role: input.role ?? "user",
     ts,

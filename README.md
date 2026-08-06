@@ -14,8 +14,10 @@ If you are an AI agent connected to Proto2 MCPs, follow this contract.
 
 | MCP server | Direction | Your job with it |
 |------------|-----------|------------------|
-| `proto-capture` | **Write** conversations | Silently record the session |
+| `proto-capture` | **Write** conversations | Silently record the session (**any** agent/host) |
 | `proto-skills` | **Read** skills + feedback | Load the right skill before answering domain tasks |
+
+`proto-capture` is **agent-agnostic**: attach the MCP once; then record via `record_message` regardless of whether you are Cursor, Claude Code, Codex, Copilot, Windsurf, Gemini, or a custom host. Optional disk snapshots cover a few known CLIs; live tools work for everything.
 
 Do **not** ask the user to call these tools. Do **not** narrate MCP calls unless asked.
 
@@ -28,7 +30,7 @@ Do **not** ask the user to call these tools. Do **not** narrate MCP calls unless
    - Follow feedback rules for the rest of the session
 
 2) EACH USER MESSAGE (background)
-   - proto-capture.record_message(role="user", text=...)
+   - proto-capture.record_message(role="user", text=..., agent=<your-host>)
 
 3) BEFORE A DOMAIN / SANDBOX TASK
    - proto-skills.match_skill(query=<user request>)
@@ -38,7 +40,7 @@ Do **not** ask the user to call these tools. Do **not** narrate MCP calls unless
      if the skill points at references/scripts
 
 4) EACH ASSISTANT REPLY (background)
-   - proto-capture.record_message(role="assistant", text=...)
+   - proto-capture.record_message(role="assistant", text=..., agent=<your-host>)
 ```
 
 ### Decision rules
@@ -70,7 +72,116 @@ User: “Recommend a US health plan for a diabetic Texas member.”
 
 ---
 
-## Human setup (one-time)
+## Integrate into another project (coding agents)
+
+Use this when the target repo is **not** Proto2. Proto2 stays the skill/feedback source; the other project only **connects** to the MCPs.
+
+### Minimum 5 steps
+
+1. **Install CLIs once on the machine** (from the Proto2 checkout, not from the target repo):
+
+```sh
+cd /path/to/Proto2/capture && npm install && npm run install:local
+cd /path/to/Proto2/skills-mcp && npm install && npm run install:local
+proto-capture --version
+proto-skills --version
+```
+
+2. **Point skills/feedback at the Proto2 data directory** (required when the agent cwd is another project):
+
+```sh
+# Windows PowerShell (user or session env)
+setx PROTO_SKILLS_ROOT "C:\Users\<you>\Desktop\POCs\Proto2\data\skills"
+setx PROTO_FEEDBACK_ROOT "C:\Users\<you>\Desktop\POCs\Proto2\data\langsmith\feedback"
+# optional separate capture store for that project:
+# setx PROTO_CAPTURE_STORE "C:\path\to\other-project\.proto-capture\conversations.json"
+```
+
+```sh
+# macOS / Linux (shell profile or direnv)
+export PROTO_SKILLS_ROOT="/path/to/Proto2/data/skills"
+export PROTO_FEEDBACK_ROOT="/path/to/Proto2/data/langsmith/feedback"
+# export PROTO_CAPTURE_STORE="/path/to/other-project/.proto-capture/conversations.json"
+```
+
+3. **Add MCP config only in the target project** (do not copy Proto2 source):
+
+Cursor — create/update `<other-project>/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "proto-capture": {
+      "command": "proto-capture",
+      "args": ["mcp"]
+    },
+    "proto-skills": {
+      "command": "proto-skills",
+      "args": ["mcp"],
+      "env": {
+        "PROTO_SKILLS_ROOT": "C:/Users/<you>/Desktop/POCs/Proto2/data/skills",
+        "PROTO_FEEDBACK_ROOT": "C:/Users/<you>/Desktop/POCs/Proto2/data/langsmith/feedback"
+      }
+    }
+  }
+}
+```
+
+Prefer putting the absolute Proto2 data paths in the MCP `env` block so the target project works even if global env vars are missing.
+
+4. **Install silent skills (machine-wide)** so the agent auto-calls the MCPs:
+
+```sh
+proto-capture skill install --force
+proto-skills skill install --force
+```
+
+5. **Verify from any directory**:
+
+```sh
+proto-skills doctor
+proto-skills status
+proto-skills match --query "recommend a US health plan for a diabetic member"
+proto-capture status
+```
+
+In the target project’s agent chat: ask it to call `skills_status`, then `match_skill` + `get_skill` for a real request.
+
+### What you should NOT do in the other project
+
+- Do not vendor/copy `data/skills` unless you intentionally fork the skill corpus
+- Do not run Proto2’s learning pipeline (`main.py extract/classify/skills`) unless you mean to operate Proto2 itself
+- Do not hardcode relative `../Proto2/...` paths that break when the repo moves — use absolute paths in MCP `env`
+
+### Cursor checklist for the other project
+
+1. CLIs installed globally (`proto-capture`, `proto-skills` on `PATH`)
+2. `<other-project>/.cursor/mcp.json` contains both servers
+3. `PROTO_SKILLS_ROOT` / `PROTO_FEEDBACK_ROOT` set (MCP `env` or system env)
+4. Cursor **Settings → MCP** shows both connected
+5. Agent can call `skills_status` and gets `skillCount > 0`
+
+### If `skillCount` is 0
+
+Skills were not found. Fix paths:
+
+```sh
+proto-skills doctor
+# skills root must contain catalog.json
+dir "%PROTO_SKILLS_ROOT%\catalog.json"     # Windows
+ls "$PROTO_SKILLS_ROOT/catalog.json"       # macOS/Linux
+```
+
+Rebuild catalog inside Proto2 if needed:
+
+```sh
+cd /path/to/Proto2
+uv run python rebuild_catalog.py
+```
+
+---
+
+## Human setup (one-time, Proto2 machine)
 
 ### Install both CLIs
 
@@ -110,6 +221,8 @@ proto-skills --version && proto-skills doctor
 
 This repo’s Cursor config is already set in [`.cursor/mcp.json`](.cursor/mcp.json).
 
+When using Proto2 itself as the workspace, defaults resolve to this repo’s `data/skills` and `data/langsmith/feedback` automatically. For **other** projects, set the env vars / MCP `env` as in [Integrate into another project](#integrate-into-another-project-coding-agents).
+
 Reload the host MCP after install. Enable both servers in the host UI if needed.
 
 ### Install silent agent skills (recommended)
@@ -125,13 +238,15 @@ These teach assistants to call the MCPs automatically.
 
 ## MCP reference
 
-### `proto-capture` — upload / record
+### `proto-capture` — upload / record (any agent)
 
 | Tool | Purpose |
 |------|---------|
-| `record_conversations` | Snapshot Claude / Codex / OpenCode / Gemini local stores into JSON |
-| `record_message` | Append one live user/assistant/system turn |
+| `record_conversations` | Best-effort snapshot of known CLI stores (Claude / Codex / OpenCode / Gemini) |
+| `record_message` | **Primary path** — append one live turn from **any** agent (`tool` / `agent` = free-form id) |
 | `conversation_status` | Show store path, counts, last update |
+
+Attach this MCP to any host. Live capture does not require Claude/Codex/etc. Disk snapshot is only a bonus for those CLIs. Optional Cursor hooks (`proto-capture hook …`) improve reliability without relying on the model.
 
 **Store locations**
 
@@ -164,11 +279,17 @@ node capture/scripts/mcp-smoke.mjs
 
 | Artifact | Path |
 |----------|------|
-| Skill catalog | `data/skills/catalog.json` |
+| Skill catalog | `data/skills/catalog.json` (inside Proto2, or `$PROTO_SKILLS_ROOT/catalog.json`) |
 | Skill packages | `data/skills/<slug>/SKILL.md` |
-| Daily feedback | `data/langsmith/feedback/YYYY-MM-DD.md` |
+| Daily feedback | `data/langsmith/feedback/YYYY-MM-DD.md` (or `$PROTO_FEEDBACK_ROOT`) |
 
-Overrides: `PROTO_SKILLS_ROOT`, `PROTO_FEEDBACK_ROOT`.
+**Cross-project overrides (required outside Proto2 cwd):**
+
+| Env | Meaning |
+|-----|---------|
+| `PROTO_SKILLS_ROOT` | Absolute path to Proto2 `data/skills` |
+| `PROTO_FEEDBACK_ROOT` | Absolute path to Proto2 `data/langsmith/feedback` |
+| `PROTO_CAPTURE_STORE` | Optional absolute path for that project’s conversation JSON |
 
 CLI helpers (no MCP needed):
 
@@ -324,6 +445,7 @@ Open [http://127.0.0.1:8765](http://127.0.0.1:8765) for skills, classification, 
 
 | Symptom | Fix |
 |---------|-----|
+| `skillCount` is 0 from another project | Set absolute `PROTO_SKILLS_ROOT` / MCP `env` to Proto2 `data/skills`; run `proto-skills doctor` |
 | MCP not listed in Cursor | `install:local` both packages; enable both servers; reload window |
 | `proto-capture` / `proto-skills` not found | Ensure Node is on `PATH`; re-run `npm run install:local` |
 | Only one MCP appears | Add both blocks to host MCP config |
