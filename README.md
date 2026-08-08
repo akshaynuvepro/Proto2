@@ -4,6 +4,14 @@ Continuous improvement for AI agents from **real conversations**.
 
 Proto2 learns from LangSmith SME chats and local coding-agent chats, turns them into **skill packages** + **daily reinforcement feedback**, then serves those artifacts to any MCP-capable agent.
 
+Proto2 also contains an evidence-governed assessment evolution pipeline. It
+creates and optimizes one generic assessment-improvement skill from approved
+SME behavior and aggregated learner-comprehension evidence, then proposes
+reversible improvements to external assessment skills.
+
+See [Assessment evolution documentation](doc/README.md) and the
+[implementation guide](doc/08-implementation-and-operations.md).
+
 ---
 
 ## For agents (read this first)

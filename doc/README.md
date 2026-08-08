@@ -120,10 +120,11 @@ curator because the paper does not currently link a reusable implementation.
 5. [Artifact lineage and Langfuse](05-observability-artifacts-and-langfuse.md)
 6. [Validation, governance, and rollout](06-validation-governance-and-rollout.md)
 7. [Proto2 migration roadmap](07-proto2-migration-roadmap.md)
-8. [Assessment-improvement skill template](templates/assessment-skill-improver/SKILL.md)
-9. [Domain profile template](templates/domain-profile.md)
-10. [Target-skill envelope template](templates/target-skill-envelope.md)
-11. [Evolution-result template](templates/evolution-result.md)
+8. [Implementation and operations guide](08-implementation-and-operations.md)
+9. [Assessment-improvement skill template](templates/assessment-skill-improver/SKILL.md)
+10. [Domain profile template](templates/domain-profile.md)
+11. [Target-skill envelope template](templates/target-skill-envelope.md)
+12. [Evolution-result template](templates/evolution-result.md)
 
 ## Current Proto2 Versus Target System
 
@@ -182,4 +183,3 @@ A release candidate is successful only when:
 - [SkillBrew paper](https://arxiv.org/abs/2605.29440)
 - [Langfuse observability concepts](https://langfuse.com/docs/observability/data-model)
 - [Langfuse evaluation concepts](https://langfuse.com/docs/evaluation/core-concepts)
-

@@ -1,10 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "proto2"
 version = "0.1.0"
-description = "Continuous skill improvement from LangSmith + local coding-agent MCP capture"
+description = "Evidence-governed assessment skill evolution with SkillOpt"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "httpx>=0.28.1",
+    "langfuse>=4,<5",
     "langsmith>=0.10.15",
+    "skillopt==0.2.0",
 ]
+
+[project.scripts]
+proto2-evolve = "assessment_evolution.cli:main"
+proto2-skillopt = "assessment_evolution.skillopt_env.launcher:main"
+assessment-factory = "assessment_factory.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["assessment_evolution*", "assessment_factory*"]

@@ -79,10 +79,16 @@
     }
     button.linkish:hover { text-decoration: underline; }
     .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; align-items: center; }
-    select, input[type="search"] {
+    select, input[type="search"], input[type="text"], input[type="password"], textarea {
       background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px;
       padding: 8px 10px; font: inherit;
     }
+    textarea { width: 100%; min-height: 72px; resize: vertical; }
+    .action {
+      border: 1px solid var(--accent-dim); background: var(--accent); color: var(--bg);
+      padding: 8px 12px; border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .action:hover { filter: brightness(1.08); }
     .split {
       display: grid;
       grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
@@ -177,6 +183,7 @@
       <button data-tab="classification">Classification</button>
       <button data-tab="conversations">Conversations</button>
       <button data-tab="capture">Capture</button>
+      <button data-tab="evolution">Assessment Evolution</button>
     </nav>
     <main id="app"><p class="empty">Loading data…</p></main>
   </div>
@@ -191,6 +198,7 @@
       convMobileDetail: false,
       classDate: null,
       convDir: null,
+      evolutionArtifact: null,
     };
     let renderSeq = 0;
 
@@ -198,6 +206,20 @@
       const res = await fetch(url);
       if (!res.ok) throw new Error(`${res.status} ${url}`);
       return res.json();
+    }
+
+    async function post(url, payload, token) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token,
+        },
+        body: JSON.stringify(payload),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || (res.status + " " + url));
+      return body;
     }
 
     function renderMarkdown(el, source) {
@@ -478,6 +500,98 @@
         </section>`;
     }
 
+    async function renderEvolution() {
+      const data = await get("/api/evolution");
+      const selected = data.reviewQueue.find((row) => row.artifact_id === state.evolutionArtifact);
+      const detail = selected
+        ? await get(`/api/evolution/artifact?run=${encodeURIComponent(selected.run_id)}&id=${encodeURIComponent(selected.artifact_id)}`)
+        : null;
+      app.innerHTML = `
+        <div class="grid stats">
+          <div class="stat"><div class="k">Runs</div><div class="v">${data.runs.length}</div></div>
+          <div class="stat"><div class="k">Pending review</div><div class="v">${data.reviewQueue.length}</div></div>
+          <div class="stat"><div class="k">Release proposals</div><div class="v">${data.releaseProposals.length}</div></div>
+        </div>
+        <div class="split ${selected ? "mobile-detail" : "mobile-list"}">
+          <section class="panel list-panel" style="overflow:auto">
+            <h2>Review queue</h2>
+            <table>
+              <thead><tr><th>Type</th><th>Candidate</th><th>Source</th></tr></thead>
+              <tbody>
+                ${data.reviewQueue.map((row) => `
+                  <tr>
+                    <td><span class="pill ${row.kind.includes("learner") ? "local" : ""}">${esc(row.kind.replace("-candidate", ""))}</span></td>
+                    <td><button class="linkish" data-open-evolution="${esc(row.artifact_id)}">${esc(String(row.title).slice(0, 100))}</button></td>
+                    <td class="meta">${row.source_count}</td>
+                  </tr>`).join("") || '<tr><td colspan="3" class="empty">No pending candidates.</td></tr>'}
+              </tbody>
+            </table>
+            <h2 style="margin-top:20px">Recent runs</h2>
+            ${data.runs.map((run) => `
+              <div style="padding:8px 0;border-bottom:1px solid var(--line)">
+                <div class="meta">${esc(run.run_id)}</div>
+                <div>${run.artifact_count} artifacts · ${esc(run.updated_at || "")}</div>
+              </div>`).join("") || '<p class="empty">No evolution runs.</p>'}
+          </section>
+          <section class="panel detail-panel">
+            <button type="button" class="back-btn" data-evolution-back>Back to queue</button>
+            ${selected && detail ? `
+              <h2>${esc(selected.kind)}</h2>
+              <p class="meta">${esc(selected.logical_id)} · run ${esc(selected.run_id)}</p>
+              <pre class="raw" style="max-height:42vh;overflow:auto">${esc(JSON.stringify(detail.content, null, 2))}</pre>
+              <form id="evolution-review" style="margin-top:16px">
+                <div class="toolbar">
+                  <label class="meta">Decision
+                    <select name="decision">
+                      <option value="approved">Approve</option>
+                      <option value="approved_with_edits">Approve with edits</option>
+                      <option value="rejected">Reject</option>
+                      <option value="deferred">Defer</option>
+                    </select>
+                  </label>
+                  <label class="meta">Reviewer
+                    <input name="reviewer_id" type="text" required autocomplete="username" />
+                  </label>
+                  <label class="meta">Review token
+                    <input name="token" type="password" required autocomplete="current-password" />
+                  </label>
+                </div>
+                <label class="meta">Review note
+                  <textarea name="comment"></textarea>
+                </label>
+                <div style="margin-top:10px"><button class="action" type="submit">Submit review</button></div>
+              </form>
+            ` : '<p class="empty">Select a candidate to inspect its complete structured record.</p>'}
+          </section>
+        </div>`;
+      const form = document.getElementById("evolution-review");
+      if (form) {
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const values = new FormData(form);
+          const button = form.querySelector("button[type=submit]");
+          button.disabled = true;
+          try {
+            await post("/api/evolution/review", {
+              run_id: selected.run_id,
+              kind: selected.kind,
+              logical_id: selected.logical_id,
+              decision: values.get("decision"),
+              reviewer_id: values.get("reviewer_id"),
+              reviewer_role: "sme",
+              reason_codes: ["review_ui_decision"],
+              comment: values.get("comment") || null,
+            }, values.get("token"));
+            state.evolutionArtifact = null;
+            await render();
+          } catch (error) {
+            button.disabled = false;
+            alert(error.message);
+          }
+        });
+      }
+    }
+
     function syncNav() {
       document.querySelectorAll("#nav button").forEach((b) => b.classList.toggle("active", b.dataset.tab === state.tab));
     }
@@ -491,6 +605,7 @@
         else if (state.tab === "classification") await renderClassification();
         else if (state.tab === "conversations") await renderConversations();
         else if (state.tab === "capture") await renderCapture();
+        else if (state.tab === "evolution") await renderEvolution();
       } catch (e) {
         if (seq !== renderSeq) return;
         app.innerHTML = `<p class="err">${esc(e.message)}</p>`;
@@ -503,6 +618,7 @@
       state.tab = btn.dataset.tab;
       if (state.tab === "skills") state.skillMobileDetail = false;
       if (state.tab === "conversations") state.convMobileDetail = false;
+      if (state.tab === "evolution") state.evolutionArtifact = null;
       render();
     });
 
@@ -538,6 +654,18 @@
         state.skillSlug = goto.getAttribute("data-goto-skill");
         state.tab = "skills";
         state.skillMobileDetail = true;
+        render();
+        return;
+      }
+      const evolution = e.target.closest("[data-open-evolution]");
+      if (evolution) {
+        state.evolutionArtifact = evolution.getAttribute("data-open-evolution");
+        state.tab = "evolution";
+        render();
+        return;
+      }
+      if (e.target.closest("[data-evolution-back]")) {
+        state.evolutionArtifact = null;
         render();
       }
     });

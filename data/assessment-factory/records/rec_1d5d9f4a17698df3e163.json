@@ -1,0 +1,345 @@
+{
+  "base_repo": "Infosys-AWS-Developer-Associate-Assessment3.3-AP",
+  "business_rules": [],
+  "content_hash": "sha256:e017f24c77dbeb7c531cb21fcfba9472b26b6142e431ea9b42582a54c2b15f8b",
+  "content_type": "assessment",
+  "created_at": "2026-08-08T06:20:36Z",
+  "deliverables": [],
+  "domain": "aws",
+  "duration_minutes": 75,
+  "grader_format": "python_harness",
+  "has_solution": true,
+  "has_validation": true,
+  "main_files": [
+    "Assessment-Activities.md",
+    "AWS-Resources-Checklist.md",
+    "cloudformation-template.yaml",
+    "ECS-Service-Creation\\Create-ECS-Service-With-CLI.py",
+    "ECS-Service-Creation\\Create-ECS-Service-With-SDK.py",
+    "images\\error.png",
+    "trade-settlement-api\\appspec.yaml",
+    "trade-settlement-api\\buildspec.yml",
+    "trade-settlement-api\\Dockerfile",
+    "trade-settlement-api\\pom.xml",
+    "trade-settlement-api\\README.md",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\config\\AWSConfig.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\controller\\TradeController.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\dto\\StatusUpdateRequest.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\dto\\TradeRequest.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\dto\\TradeResponse.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\exception\\GlobalExceptionHandler.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\exception\\TradeNotFoundException.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\model\\Trade.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\repository\\DynamoDbTradeRepositoryImpl.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\repository\\TradeRepository.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\security\\KMSService.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\security\\KMSServiceImpl.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\security\\SecretManagerService.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\security\\SecretManagerServiceImpl.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\security\\SSMService.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\security\\SSMServiceImpl.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\service\\TradeService.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\service\\TradeServiceImpl.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\TradeApplication.java",
+    "trade-settlement-api\\src\\main\\java\\com\\trade\\app\\util\\Constants.java",
+    "trade-settlement-api\\src\\main\\resources\\application-prod.properties",
+    "trade-settlement-api\\src\\main\\resources\\application.properties",
+    "trade-settlement-api\\src\\main\\resources\\logback-spring.xml",
+    "trade-settlement-api\\taskdef.json",
+    "trade-settlement-api\\trade-settlement-api.postman_collection.json"
+  ],
+  "phases": [
+    {
+      "name": "Phase 1 Infrastructure Configuration",
+      "objective": "",
+      "tasks": [
+        "Validate CloudFormation infrastructure provisioning. **(Marks = 8)**",
+        "Validate AWS KMS key creation and encryption configuration. **(Marks = 6)**",
+        "Validate Secrets Manager and Parameter Store creation and integration. **(Marks = 8)**",
+        "Validate DynamoDB table and S3 source bucket creation. **(Marks = 6)**"
+      ]
+    },
+    {
+      "name": "Phase 2 Application Development",
+      "objective": "",
+      "tasks": [
+        "Validate Trade Settlement API endpoints, request validation, exception handling, and structured logging. **(Marks = 10)**",
+        "Validate DynamoDB persistence with KMS-encrypted sensitive fields. **(Marks = 8)**",
+        "Validate Secrets Manager and Parameter Store retrieval with no hardcoded credentials. **(Marks = 6)**"
+      ]
+    },
+    {
+      "name": "Phase 3 Deployment & Integration (CI/CD)",
+      "objective": "",
+      "tasks": [
+        "Validate container image creation and Amazon ECR deployment. **(Marks = 6)**",
+        "Validate Amazon ECS Fargate deployment with `CODE_DEPLOY` deployment controller behind the Application Load Balancer and exposed through API Gateway with Cognito authentication. **(Marks = 8)**",
+        "Validate S3-triggered AWS CodePipeline and AWS CodeBuild integration. **(Marks = 8)**",
+        "Validate AWS CodeDeploy blue/green deployment and automated rollback configuration. **(Marks = 8)**"
+      ]
+    },
+    {
+      "name": "Phase 4 Observability & Audit",
+      "objective": "",
+      "tasks": [
+        "Validate AWS CloudTrail audit logging configuration. **(Marks = 4)**",
+        "Validate structured logging and Amazon CloudWatch alarms configuration. **(Marks = 4)**"
+      ]
+    },
+    {
+      "name": "Phase 5 End-to-End Validation",
+      "objective": "",
+      "tasks": [
+        "Validate end-to-end pipeline execution and zero-downtime deployment. **(Marks = 4)**",
+        "Validate induced deployment failure and automated rollback. **(Marks = 3)**",
+        "Validate API security, KMS encryption, secret retrieval, and CloudTrail audit controls. **(Marks = 3)**"
+      ]
+    }
+  ],
+  "record_id": "rec_1d5d9f4a17698df3e163",
+  "resource_registry": [
+    "cloudformation-template.yaml",
+    "trade-platform-infra-dev",
+    "AWS-Resources-Checklist.md",
+    "trade-platform-kms",
+    "trade-app-secrets",
+    "us-east-1",
+    "alias/trade-platform-kms",
+    "trade-api-bucket-",
+    "trade-api-bucket-373954893424-dev",
+    "trade-settlement-api",
+    "trade-platform-codedeploy-app",
+    "trade-platform-bluegreen-dg",
+    "CodeDeployDefault.ECSAllAtOnce",
+    "trade-platform-cicd-pipeline",
+    "trade-platform-trail",
+    "trade-api-high-latency",
+    "trade-api-5xx-errors",
+    "trade-api-unhealthy-hosts",
+    "trade-api-green-unhealthy",
+    "trade-platform-cluster",
+    "trade-api-service",
+    "trade-settlement-api.zip",
+    "trade-api-project"
+  ],
+  "scenario": "A brokerage firm is replacing its legacy trade settlement system with a modern, cloud-native settlement platform that records executed trades and tracks their settlement status. The platform must protect sensitive trade and account information, govern software releases, and deliver releases with zero downtime.\n\nIn the last quarter, an unaudited manual deployment took the settlement service offline for two hours during market close processing, a configuration change exposed a credential in plaintext, and a compliance review flagged the absence of an audit trail for privileged actions. The firm now requires encryption of sensitive data, secret and configuration management, an automated and auditable CI/CD pipeline, and zero-downtime blue/green deployments with automated rollback.\n\nThe outgoing engineering team left behind a partially implemented Java Spring Boot Trade Settlement API with empty controller methods. AWS KMS encryption and AWS Secrets Manager retrieval calls are already wired in the code, but no key, secret, parameter, S3 bucket, or CloudTrail trail has been created — you must create them. A completed Dockerfile, a `buildspec.yml`, an `appspec.yaml`, a `taskdef.json`, and an AWS CloudFormation template are provided.\n\nYour responsibility is to complete the application and stand up the governed, secure delivery pipeline below.",
+  "schema_version": "assessment-record/1",
+  "services": [
+    "ECR",
+    "ECS Fargate",
+    "API Gateway",
+    "DynamoDB",
+    "Cognito",
+    "KMS",
+    "Secrets Manager",
+    "Systems Manager Parameter Store",
+    "S3",
+    "CloudFormation",
+    "CodePipeline",
+    "CodeBuild",
+    "CodeDeploy",
+    "CloudWatch",
+    "CloudTrail",
+    "IAM",
+    "CloudFormation template are provided",
+    "Cognito User Pool",
+    "KMS key for encrypting sensitive trade",
+    "Secrets Manager secret",
+    "Redshift",
+    "S3 source bucket for the pipeline",
+    "ECS",
+    "KMS key creation",
+    "ECR deployment",
+    "CodeBuild integration",
+    "CloudTrail audit logging configuration",
+    "CloudWatch alarms configuration"
+  ],
+  "source": {
+    "base_repo": "Infosys-AWS-Developer-Associate-Assessment3.3-AP",
+    "missing_members": [],
+    "org": "Nuvepro-Technologies-Pvt-Ltd"
+  },
+  "tech_stack": {},
+  "technical_requirements": [],
+  "testcases": [
+    {
+      "category": "cloudformation",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase1_cloudformation_stack"
+      },
+      "marks": 8.0,
+      "name": "testcase1 cloudformation stack",
+      "phase": "Phase 1 - Infrastructure Configuration",
+      "test_id": "tc01"
+    },
+    {
+      "category": "kms",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase2_kms_key"
+      },
+      "marks": 6.0,
+      "name": "testcase2 kms key",
+      "phase": "Phase 1 - Infrastructure Configuration",
+      "test_id": "tc02"
+    },
+    {
+      "category": "ecr",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase3_secrets_manager_ssm"
+      },
+      "marks": 8.0,
+      "name": "testcase3 secrets manager ssm",
+      "phase": "Phase 1 - Infrastructure Configuration",
+      "test_id": "tc03"
+    },
+    {
+      "category": "dynamodb",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase4_dynamodb_table_s3_bucket"
+      },
+      "marks": 6.0,
+      "name": "testcase4 dynamodb table s3 bucket",
+      "phase": "Phase 1 - Infrastructure Configuration",
+      "test_id": "tc04"
+    },
+    {
+      "category": "api",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase5_trade_api_endpoints"
+      },
+      "marks": 10.0,
+      "name": "testcase5 trade api endpoints",
+      "phase": "Phase 2 - Application Development",
+      "test_id": "tc05"
+    },
+    {
+      "category": "kms",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase6_dynamodb_kms_encrypted_fields"
+      },
+      "marks": 8.0,
+      "name": "testcase6 dynamodb kms encrypted fields",
+      "phase": "Phase 2 - Application Development",
+      "test_id": "tc06"
+    },
+    {
+      "category": "ecr",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase7_secrets_parameter_retrieval"
+      },
+      "marks": 6.0,
+      "name": "testcase7 secrets parameter retrieval",
+      "phase": "Phase 2 - Application Development",
+      "test_id": "tc07"
+    },
+    {
+      "category": "ecr",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase8_ecr_image"
+      },
+      "marks": 6.0,
+      "name": "testcase8 ecr image",
+      "phase": "Phase 3 - Deployment & Integration (CI/CD)",
+      "test_id": "tc08"
+    },
+    {
+      "category": "ecs",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase9_ecs_alb_apigw_cognito"
+      },
+      "marks": 8.0,
+      "name": "testcase9 ecs alb apigw cognito",
+      "phase": "Phase 3 - Deployment & Integration (CI/CD)",
+      "test_id": "tc09"
+    },
+    {
+      "category": "s3",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase10_s3_pipeline_codebuild"
+      },
+      "marks": 8.0,
+      "name": "testcase10 s3 pipeline codebuild",
+      "phase": "Phase 3 - Deployment & Integration (CI/CD)",
+      "test_id": "tc10"
+    },
+    {
+      "category": "codedeploy",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase11_codedeploy_bluegreen"
+      },
+      "marks": 8.0,
+      "name": "testcase11 codedeploy bluegreen",
+      "phase": "Phase 3 - Deployment & Integration (CI/CD)",
+      "test_id": "tc11"
+    },
+    {
+      "category": "cloudtrail",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase12_cloudtrail"
+      },
+      "marks": 4.0,
+      "name": "testcase12 cloudtrail",
+      "phase": "Phase 4 - Observability & Audit",
+      "test_id": "tc12"
+    },
+    {
+      "category": "cloudwatch",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase13_cloudwatch_alarms_logging"
+      },
+      "marks": 4.0,
+      "name": "testcase13 cloudwatch alarms logging",
+      "phase": "Phase 4 - Observability & Audit",
+      "test_id": "tc13"
+    },
+    {
+      "category": "general",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase14_pipeline_zero_downtime"
+      },
+      "marks": 4.0,
+      "name": "testcase14 pipeline zero downtime",
+      "phase": "Phase 5 - End-to-End Validation",
+      "test_id": "tc14"
+    },
+    {
+      "category": "general",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase15_rollback_validated"
+      },
+      "marks": 3.0,
+      "name": "testcase15 rollback validated",
+      "phase": "Phase 5 - End-to-End Validation",
+      "test_id": "tc15"
+    },
+    {
+      "category": "kms",
+      "check_kind": "python",
+      "details": {
+        "method": "testcase16_api_security_kms_secrets"
+      },
+      "marks": 3.0,
+      "name": "testcase16 api security kms secrets",
+      "phase": "Phase 5 - End-to-End Validation",
+      "test_id": "tc16"
+    }
+  ],
+  "title": "Brokerage Trade Settlement Platform CI/CD and Security Transformation on AWS Assessment",
+  "total_marks": 100.0,
+  "warnings": []
+}

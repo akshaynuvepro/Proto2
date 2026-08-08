@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import json
+import hmac
+import os
 import re
+import sys
 from collections import Counter
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -12,11 +15,14 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 STATIC = Path(__file__).resolve().parent / "static"
 DATA = ROOT / "data"
 SKILLS = DATA / "skills"
 LANGSMITH = DATA / "langsmith"
 CAPTURE = DATA / "capture" / "conversations.json"
+EVOLUTION = DATA / "assessment-evolution"
 
 _FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n\n?", re.DOTALL)
 _PORT = 8765
@@ -314,6 +320,182 @@ def api_capture(limit: int = 300) -> dict:
     }
 
 
+def api_evolution() -> dict:
+    runs_root = EVOLUTION / "runs"
+    if not runs_root.exists():
+        return {"runs": [], "reviewQueue": [], "releaseProposals": []}
+    runs = []
+    review_queue = []
+    release_proposals = []
+    for run_dir in sorted(
+        (path for path in runs_root.iterdir() if path.is_dir()),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    ):
+        manifest_path = run_dir / "manifest.json"
+        if not manifest_path.exists():
+            continue
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        artifacts = manifest.get("artifacts") or []
+        by_type = Counter(str(item.get("artifact_type") or "unknown") for item in artifacts)
+        reviewed_ids = {
+            source_id
+            for item in artifacts
+            if item.get("artifact_type")
+            in {
+                "reviewed-sme-evidence",
+                "reviewed-learner-evidence",
+                "reviewed-learner-confusion-cluster",
+                "reviewed-principle",
+            }
+            for source_id in item.get("source_record_ids") or []
+        }
+        for item in artifacts:
+            artifact_type = item.get("artifact_type")
+            if artifact_type not in {
+                "sme-evidence-candidate",
+                "learner-evidence-candidate",
+                "learner-confusion-cluster",
+                "principle-candidate",
+            }:
+                continue
+            path = (run_dir / str(item.get("relative_path") or "")).resolve()
+            try:
+                path.relative_to(run_dir.resolve())
+                raw = json.loads(path.read_text(encoding="utf-8"))
+            except (ValueError, OSError, json.JSONDecodeError):
+                continue
+            logical_id = str(
+                raw.get("evidence_id")
+                or raw.get("cluster_id")
+                or raw.get("principle_id")
+                or ""
+            )
+            if logical_id in reviewed_ids or raw.get("review_status") != "pending":
+                continue
+            review_queue.append(
+                {
+                    "run_id": run_dir.name,
+                    "artifact_id": item.get("artifact_id"),
+                    "kind": artifact_type,
+                    "logical_id": logical_id,
+                    "category": raw.get("category") or "",
+                    "title": raw.get("title") or raw.get("claim") or raw.get("summary") or raw.get("confusion_statement") or logical_id,
+                    "confidence": raw.get("confidence", raw.get("extractor_confidence")),
+                    "source_count": len(raw.get("source_spans") or raw.get("evidence_ids") or []),
+                }
+            )
+        for item in artifacts:
+            if item.get("artifact_type") != "release-proposal":
+                continue
+            path = run_dir / str(item.get("relative_path") or "")
+            try:
+                raw = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            release_proposals.append(
+                {
+                    "run_id": run_dir.name,
+                    "release_id": raw.get("release_id"),
+                    "target_skill_id": raw.get("target_skill_id"),
+                    "status": raw.get("status"),
+                    "proposed_version": raw.get("proposed_version"),
+                }
+            )
+        runs.append(
+            {
+                "run_id": run_dir.name,
+                "purpose": manifest.get("purpose"),
+                "artifact_count": len(artifacts),
+                "event_count": manifest.get("event_count", 0),
+                "updated_at": manifest.get("updated_at"),
+                "by_type": dict(by_type),
+                "integrity": "unchecked",
+            }
+        )
+    return {
+        "runs": runs,
+        "reviewQueue": review_queue,
+        "releaseProposals": release_proposals,
+    }
+
+
+def api_evolution_artifact(run_id: str, artifact_id: str) -> dict | None:
+    safe_run = Path(run_id).name
+    manifest_path = EVOLUTION / "runs" / safe_run / "manifest.json"
+    if not manifest_path.exists():
+        return None
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    item = next(
+        (
+            row
+            for row in manifest.get("artifacts") or []
+            if row.get("artifact_id") == artifact_id
+        ),
+        None,
+    )
+    if not item:
+        return None
+    run_dir = manifest_path.parent.resolve()
+    path = (run_dir / str(item.get("relative_path") or "")).resolve()
+    try:
+        path.relative_to(run_dir)
+    except ValueError:
+        return None
+    if not path.is_file():
+        return None
+    if path.suffix == ".json":
+        content: object = json.loads(path.read_text(encoding="utf-8"))
+    else:
+        content = path.read_text(encoding="utf-8", errors="replace")
+    return {"manifest": item, "content": content}
+
+
+def submit_evolution_review(payload: dict) -> str:
+    run_id = str(payload.get("run_id") or "")
+    kind = str(payload.get("kind") or "")
+    logical_id = str(payload.get("logical_id") or "")
+    decision = str(payload.get("decision") or "")
+    reviewer_id = str(payload.get("reviewer_id") or "")
+    if not all((run_id, kind, logical_id, decision, reviewer_id)):
+        raise ValueError("run_id, kind, logical_id, decision, and reviewer_id are required")
+    from assessment_evolution.artifacts import ArtifactStore
+    from assessment_evolution.pipeline import AssessmentEvolutionPipeline
+
+    run_dir = EVOLUTION / "runs" / Path(run_id).name
+    if not run_dir.exists():
+        raise FileNotFoundError("run not found")
+    pipeline = AssessmentEvolutionPipeline(ArtifactStore(EVOLUTION, run_dir.name))
+    if kind in {"sme-evidence-candidate", "learner-evidence-candidate"}:
+        return pipeline.review_candidate(
+            evidence_id=logical_id,
+            decision=decision,
+            reviewer_id=reviewer_id,
+            reviewer_role=str(payload.get("reviewer_role") or "sme"),
+            reason_codes=list(payload.get("reason_codes") or ["review_ui_decision"]),
+            comment=payload.get("comment"),
+            field_corrections=dict(payload.get("field_corrections") or {}),
+        )
+    if kind == "learner-confusion-cluster":
+        return pipeline.review_cluster(
+            cluster_id=logical_id,
+            decision=decision,
+            reviewer_id=reviewer_id,
+            comment=payload.get("comment"),
+        )
+    if kind == "principle-candidate":
+        return pipeline.review_principle(
+            principle_id=logical_id,
+            decision=decision,
+            reviewer_id=reviewer_id,
+            reviewer_role=str(payload.get("reviewer_role") or "sme"),
+        )
+    raise ValueError(f"unsupported review kind {kind}")
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(STATIC), **kwargs)
@@ -362,10 +544,39 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(200, data) if data else self._json(404, {"error": "not found"})
         if path == "/api/capture":
             return self._json(200, api_capture())
+        if path == "/api/evolution":
+            return self._json(200, api_evolution())
+        if path == "/api/evolution/artifact":
+            run_id = qs.get("run", [""])[0]
+            artifact_id = qs.get("id", [""])[0]
+            data = api_evolution_artifact(run_id, artifact_id)
+            return self._json(200, data) if data else self._json(404, {"error": "not found"})
 
         if path == "/" or path == "":
             self.path = "/index.html"
         return super().do_GET()
+
+    def do_POST(self) -> None:  # noqa: N802
+        parsed = urlparse(self.path)
+        if parsed.path != "/api/evolution/review":
+            return self._json(404, {"error": "not found"})
+        expected = os.getenv("PROTO_REVIEW_TOKEN", "")
+        supplied = self.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+        if not expected:
+            return self._json(503, {"error": "PROTO_REVIEW_TOKEN is not configured"})
+        if not hmac.compare_digest(supplied, expected):
+            return self._json(401, {"error": "unauthorized"})
+        try:
+            size = int(self.headers.get("Content-Length", "0"))
+            if size <= 0 or size > 65536:
+                raise ValueError("invalid request size")
+            payload = json.loads(self.rfile.read(size).decode("utf-8"))
+            artifact_id = submit_evolution_review(payload)
+            return self._json(201, {"artifact_id": artifact_id})
+        except FileNotFoundError as exc:
+            return self._json(404, {"error": str(exc)})
+        except (ValueError, json.JSONDecodeError) as exc:
+            return self._json(400, {"error": str(exc)})
 
 
 def main() -> None:

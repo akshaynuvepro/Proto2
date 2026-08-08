@@ -1,0 +1,192 @@
+{
+  "canonical_example": {
+    "base_repo": "Infosys-AWS-Developer-Associate-Assessment3.3-AP",
+    "grader_format": "python_harness",
+    "phase_names": [
+      "Phase 1  Infrastructure Configuration",
+      "Phase 2  Application Development",
+      "Phase 3  Deployment & Integration (CI/CD)",
+      "Phase 4  Observability & Audit",
+      "Phase 5  End-to-End Validation"
+    ],
+    "record_id": "rec_1d5d9f4a17698df3e163",
+    "testcase_categories": [
+      "api",
+      "cloudformation",
+      "cloudtrail",
+      "cloudwatch",
+      "codedeploy",
+      "dynamodb",
+      "ecr",
+      "ecs",
+      "general",
+      "kms",
+      "s3"
+    ],
+    "title": "Brokerage Trade Settlement Platform CI/CD and Security Transformation on AWS Assessment",
+    "total_marks": 100.0
+  },
+  "content_hash": "sha256:2cc02b6bf75f93236087ddf1e3ba92503dc534221f416115515176d73f9ef630",
+  "content_type": "assessment",
+  "created_at": "2026-08-08T06:19:14Z",
+  "derived_from": [
+    "rec_1d5d9f4a17698df3e163",
+    "rec_216485554a0e25109269",
+    "rec_5a696653ed9ee8f00c67",
+    "rec_68ecb6cebd51743b94c5"
+  ],
+  "domain": "aws",
+  "house_style": {
+    "duration_minutes": {
+      "default": 42,
+      "values": [
+        40,
+        45,
+        75
+      ]
+    },
+    "exact_name_discipline": "Resource names stated in the task doc MUST match, byte-for-byte, the names checked by the grader. No extra spaces or case differences.",
+    "phase_count": {
+      "max": 5,
+      "median": 5,
+      "min": 5
+    },
+    "resource_naming": {
+      "common_prefixes": [
+        "trade",
+        "shipment",
+        "order",
+        "us",
+        "cloudformation",
+        "AWS",
+        "alias/trade",
+        "30"
+      ],
+      "examples": [
+        "cloudformation-template.yaml",
+        "trade-platform-infra-dev",
+        "AWS-Resources-Checklist.md",
+        "trade-platform-kms",
+        "trade-app-secrets",
+        "us-east-1",
+        "alias/trade-platform-kms",
+        "trade-api-bucket-",
+        "trade-api-bucket-373954893424-dev",
+        "trade-settlement-api",
+        "trade-platform-codedeploy-app",
+        "trade-platform-bluegreen-dg",
+        "CodeDeployDefault.ECSAllAtOnce",
+        "trade-platform-cicd-pipeline",
+        "trade-platform-trail"
+      ],
+      "kebab_case_fraction": 0.825,
+      "path_style_fraction": 0.018,
+      "total_sampled": 57
+    },
+    "testcase_categories": [
+      "general",
+      "ecr",
+      "api",
+      "kms",
+      "dynamodb",
+      "API_HANDLER",
+      "DYNAMODB_REPOSITORY",
+      "ecs",
+      "REQUEST_VALIDATION",
+      "STREAM_PROCESSOR",
+      "SNS_NOTIFICATION",
+      "sqs",
+      "cloudformation",
+      "s3",
+      "codedeploy",
+      "cloudtrail",
+      "cloudwatch",
+      "IDEMPOTENT_WRITES",
+      "FIREHOSE_DELIVERY",
+      "DLQ_HANDLING"
+    ],
+    "testcase_count": {
+      "max": 16,
+      "median": 14,
+      "min": 14
+    },
+    "top_services": [
+      "API Gateway",
+      "DynamoDB",
+      "Assessment",
+      "Account with all required permissions",
+      "ECR",
+      "IAM",
+      "CLI",
+      "ECS Fargate",
+      "Cognito",
+      "S3",
+      "CloudWatch",
+      "Kinesis Data Streams",
+      "SQS",
+      "SNS",
+      "Kinesis",
+      "Lambda",
+      "Data Firehose",
+      "CloudFormation template",
+      "KMS encryption",
+      "KMS"
+    ],
+    "total_marks": {
+      "default": 100,
+      "values": [
+        54,
+        100
+      ]
+    }
+  },
+  "name": "AWS Developer Associate",
+  "schema_version": "assessment-template/1",
+  "status": "ready",
+  "structure": {
+    "grader_formats_seen": {
+      "json_testcases": 1,
+      "python_harness": 3
+    },
+    "learner_safe_vs_evaluator_only": {
+      "evaluator_only": [
+        "_Solution reference answer",
+        "_Validation grader + expected values"
+      ],
+      "learner_safe": [
+        "_Main task doc, starter code, images"
+      ],
+      "rule": "Never place solution code, answer keys, or grader expected values into _Main."
+    },
+    "recommended_grader_format": "python_harness",
+    "required_main_files": [
+      "task-doc (Activities.md)",
+      "starter code project",
+      "other (images\\error.png)",
+      "config yaml"
+    ],
+    "task_doc_names_seen": [
+      "Assessment-Activities.md",
+      "Assessment_Activities.md"
+    ],
+    "triplet_completeness": {
+      "total": 4,
+      "with_solution": 2,
+      "with_validation": 3
+    }
+  },
+  "template_id": "tpl_8d39372ac5e35b51ca64",
+  "testcase_schema": {
+    "fields": {
+      "category": "grouping tag (service or capability)",
+      "check_kind": "api | resource | db | code | e2e",
+      "details": "format-specific fields (endpoint, expectedStatusCode, resourceName, expectedValues...)",
+      "id": "stable id, e.g. TC001 or tc01",
+      "marks": "positive number; all marks sum to total_marks",
+      "name": "human-readable check title",
+      "phase": "the phase/milestone this check belongs to"
+    },
+    "grouping": "testcases are grouped into phases/milestones matching the task doc",
+    "marks_rule": "sum(testcase.marks) == total_marks"
+  }
+}

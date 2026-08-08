@@ -1,0 +1,37 @@
+{
+  "base_repo": "Skillsoft-AWS-Create-S3-GP",
+  "business_rules": [],
+  "content_hash": "sha256:00d38818ead30b8624561b7d7311632cdb6a474f9c7263080021b0653bbee6f5",
+  "content_type": "guided_project",
+  "created_at": "2026-08-08T06:22:56Z",
+  "deliverables": [],
+  "domain": "aws",
+  "duration_minutes": null,
+  "grader_format": "none",
+  "has_solution": false,
+  "has_validation": false,
+  "main_files": [],
+  "phases": [],
+  "record_id": "rec_f257d761513e4eee4005",
+  "resource_registry": [],
+  "scenario": "",
+  "schema_version": "assessment-record/1",
+  "services": [],
+  "source": {
+    "base_repo": "Skillsoft-AWS-Create-S3-GP",
+    "missing_members": [
+      "Main",
+      "Solution",
+      "Validation"
+    ],
+    "org": "Nuvepro-Technologies-Pvt-Ltd"
+  },
+  "tech_stack": {},
+  "technical_requirements": [],
+  "testcases": [],
+  "title": "Skillsoft-AWS-Create-S3-GP",
+  "total_marks": 0,
+  "warnings": [
+    "missing _Main repo"
+  ]
+}

@@ -1,0 +1,534 @@
+[
+  {
+    "assessment_brief": {
+      "level": "intermediate",
+      "minimum_characters": 40,
+      "objective": "Analyze synthetic scenario variant test-1",
+      "prohibited_literals": [
+        "THE-ANSWER-IS"
+      ],
+      "required_literals": [
+        "REQUIRED-MARKER"
+      ]
+    },
+    "consumer_config": {
+      "paired": true,
+      "synthetic_fixture": true,
+      "temperature": 0
+    },
+    "deterministic_validators": [
+      "target-contract:v1",
+      "assessment-required-content:v1",
+      "solution-leakage:v1"
+    ],
+    "domain_profile": {
+      "approved": true,
+      "approved_references": [
+        {
+          "authority": "synthetic-test-only",
+          "id": "fixture-reference"
+        }
+      ],
+      "assessment_types": [
+        "scenario",
+        "hands-on"
+      ],
+      "authoritative_terminology": {
+        "observable output": "A result a reviewer can inspect without prescribing its creation."
+      },
+      "competency_taxonomy": [
+        {
+          "id": "fixture-analysis",
+          "label": "Analyze a constrained scenario"
+        }
+      ],
+      "difficulty_model": {
+        "levels": [
+          "beginner",
+          "intermediate",
+          "advanced"
+        ],
+        "protected": true
+      },
+      "domain": "synthetic-fixture",
+      "owner": "fixture-owner",
+      "profile_id": "fixture-domain:v1",
+      "prohibited_behavior": [
+        "Domain-specific factual claims",
+        "Learner solutions"
+      ],
+      "protected_policies": [
+        "Never disclose the evaluator-only rubric to the learner.",
+        "Never provide a solution path."
+      ],
+      "schema_version": "assessment-domain-profile/1",
+      "validators": [
+        {
+          "id": "fixture-required-marker",
+          "version": "1"
+        }
+      ],
+      "version": "v1"
+    },
+    "evidence_bundle": {
+      "items": [
+        {
+          "after": {
+            "summary": "Instruction names an observable output."
+          },
+          "applicability": {
+            "assessment_types": [
+              "scenario",
+              "hands-on"
+            ],
+            "domains": []
+          },
+          "before": {
+            "summary": "Instruction names activity only."
+          },
+          "category": "correction_pair",
+          "claim": "State an observable completion outcome without prescribing the solution path.",
+          "created_at": "2026-08-07T00:00:00+00:00",
+          "created_by": {
+            "component": "fixture"
+          },
+          "evidence_id": "sme_ev_fixture_observable",
+          "exceptions": [
+            "The output itself is intentionally the discovery target."
+          ],
+          "extractor_confidence": 1.0,
+          "failure_mechanism": "Activity-only instructions do not define a reviewable end state.",
+          "inference_level": "explicit",
+          "negative_example": null,
+          "positive_example": null,
+          "rationale": "The learner must know what artifact is evaluated while retaining the intended challenge.",
+          "recommended_behavior": "Name the observable output and acceptance boundary without commands.",
+          "review_status": "approved",
+          "schema_version": "sme-evidence/1",
+          "source_spans": [
+            {
+              "conversation_id": "conv_fixture_sme",
+              "end_char": 20,
+              "message_id": "msg_fixture_sme",
+              "redaction_labels": [],
+              "sanitized_excerpt": "approved fixture span",
+              "schema_version": "source-span/1",
+              "span_id": "span_fixture_sme",
+              "start_char": 0,
+              "text_hash": "sha256:9d4a534858bccb3cae4ddd27a665ae81a125d92140616123465adffd903a89a5"
+            }
+          ],
+          "supersedes": []
+        }
+      ],
+      "manifest": {
+        "bundle_id": "bundle_fixture_v1",
+        "content_hash": "sha256:6436cee5ed0b404fef3f685bcee85ccba081451a58e920bf9d92028c56c4594b",
+        "created_at": "2026-08-07T00:00:00+00:00",
+        "cutoff_at": "2026-08-07T00:00:00+00:00",
+        "domain_profile_id": "fixture-domain:v1",
+        "excluded_evidence": [],
+        "learner_cluster_ids": [],
+        "review_manifest": "fixture-reviews:v1",
+        "schema_version": "assessment-evidence-bundle/1",
+        "sme_evidence_ids": [
+          "sme_ev_fixture_observable"
+        ],
+        "split_manifest": "fixture-splits:v1",
+        "statistics": {
+          "distinct_learners": 0,
+          "distinct_smes": 1,
+          "learner_confusion_clusters": 0,
+          "sme_correction_pairs": 1,
+          "sme_positive_anchors": 0
+        },
+        "target_scope": [
+          "fixture-assessment-generator"
+        ]
+      }
+    },
+    "expected_behaviors": [
+      {
+        "dimension": "instruction_clarity",
+        "prohibited_phrases": [
+          "step-by-step solution"
+        ],
+        "required_phrases": [
+          "observable"
+        ]
+      },
+      {
+        "dimension": "sme_adaptation",
+        "required_phrases": [
+          "observable"
+        ]
+      },
+      {
+        "dimension": "assessment_utility",
+        "required_phrases": [
+          "scenario",
+          "REQUIRED-MARKER"
+        ]
+      },
+      {
+        "dimension": "objective_coverage",
+        "required_phrases": [
+          "analyze"
+        ]
+      }
+    ],
+    "expected_output": null,
+    "id": "fixture_test_1",
+    "metadata": {
+      "assessment_type": "hands-on",
+      "level": "intermediate",
+      "synthetic_fixture": true
+    },
+    "protected_behaviors": [
+      {
+        "id": "no-solution",
+        "required": true
+      },
+      {
+        "id": "required-marker",
+        "required": true
+      }
+    ],
+    "schema_version": "assessment-improver-benchmark/1",
+    "split": "test",
+    "split_group": "fixture-family-test-1",
+    "target_skill_envelope": {
+      "display_name": "Fixture Assessment Generator",
+      "domain_profile_id": "fixture-domain:v1",
+      "exact_skill_markdown": "---\nname: fixture-assessment-generator\ndescription: Generates domain-neutral scenario assessments for contract tests.\n---\n\n# Fixture Assessment Generator\n\n## Workflow\n\n1. Read the supplied objective and level.\n2. Create one scenario question.\n3. State the task without providing its answer.\n\n## Output Contract\n\nReturn a question, an evaluator-only rubric, and the phrase REQUIRED-MARKER.\n\n## Protected Policy\n\nDo not reveal answers, commands, or evaluator secrets to the learner.\n",
+      "immutable_sections": {
+        "Protected Policy": "sha256:7e9e5b9c3392ee0cd359497f84df51e8452035cf15ae7551cbf7a862124e9002"
+      },
+      "input_content_hash": "sha256:4aef9c45513379f807f07cde49d96e38689d1a4a9988a6c66ae84e99166e9d81",
+      "input_contract": {
+        "required": [
+          "objective",
+          "level"
+        ]
+      },
+      "input_version": "v1",
+      "metadata": {
+        "synthetic_fixture": true
+      },
+      "output_contract": {
+        "required_literals": [
+          "REQUIRED-MARKER"
+        ]
+      },
+      "owner": "fixture-owner",
+      "permitted_change_areas": [
+        "Workflow"
+      ],
+      "protected_behaviors": [
+        {
+          "description": "No learner-facing solution",
+          "id": "no-solutions"
+        }
+      ],
+      "reference_contracts": [],
+      "required_frontmatter": {
+        "description": {
+          "immutable": false,
+          "required": true,
+          "type": "string"
+        },
+        "name": {
+          "immutable": true,
+          "required": true,
+          "type": "string"
+        }
+      },
+      "required_sections": [
+        "Workflow",
+        "Output Contract",
+        "Protected Policy"
+      ],
+      "rollback": {
+        "owner": "fixture-owner",
+        "previous_version": "v1"
+      },
+      "schema_version": "target-assessment-skill-envelope/1",
+      "script_contracts": [],
+      "status": "staging",
+      "target_skill_id": "fixture-assessment-generator",
+      "tool_contracts": [],
+      "validators": [
+        {
+          "id": "fixture-contract-validator",
+          "version": "1"
+        }
+      ]
+    }
+  },
+  {
+    "assessment_brief": {
+      "level": "advanced",
+      "minimum_characters": 40,
+      "objective": "Analyze synthetic scenario variant test-2",
+      "prohibited_literals": [
+        "THE-ANSWER-IS"
+      ],
+      "required_literals": [
+        "REQUIRED-MARKER"
+      ]
+    },
+    "consumer_config": {
+      "paired": true,
+      "synthetic_fixture": true,
+      "temperature": 0
+    },
+    "deterministic_validators": [
+      "target-contract:v1",
+      "assessment-required-content:v1",
+      "solution-leakage:v1"
+    ],
+    "domain_profile": {
+      "approved": true,
+      "approved_references": [
+        {
+          "authority": "synthetic-test-only",
+          "id": "fixture-reference"
+        }
+      ],
+      "assessment_types": [
+        "scenario",
+        "hands-on"
+      ],
+      "authoritative_terminology": {
+        "observable output": "A result a reviewer can inspect without prescribing its creation."
+      },
+      "competency_taxonomy": [
+        {
+          "id": "fixture-analysis",
+          "label": "Analyze a constrained scenario"
+        }
+      ],
+      "difficulty_model": {
+        "levels": [
+          "beginner",
+          "intermediate",
+          "advanced"
+        ],
+        "protected": true
+      },
+      "domain": "synthetic-fixture",
+      "owner": "fixture-owner",
+      "profile_id": "fixture-domain:v1",
+      "prohibited_behavior": [
+        "Domain-specific factual claims",
+        "Learner solutions"
+      ],
+      "protected_policies": [
+        "Never disclose the evaluator-only rubric to the learner.",
+        "Never provide a solution path."
+      ],
+      "schema_version": "assessment-domain-profile/1",
+      "validators": [
+        {
+          "id": "fixture-required-marker",
+          "version": "1"
+        }
+      ],
+      "version": "v1"
+    },
+    "evidence_bundle": {
+      "items": [
+        {
+          "after": {
+            "summary": "Instruction names an observable output."
+          },
+          "applicability": {
+            "assessment_types": [
+              "scenario",
+              "hands-on"
+            ],
+            "domains": []
+          },
+          "before": {
+            "summary": "Instruction names activity only."
+          },
+          "category": "correction_pair",
+          "claim": "State an observable completion outcome without prescribing the solution path.",
+          "created_at": "2026-08-07T00:00:00+00:00",
+          "created_by": {
+            "component": "fixture"
+          },
+          "evidence_id": "sme_ev_fixture_observable",
+          "exceptions": [
+            "The output itself is intentionally the discovery target."
+          ],
+          "extractor_confidence": 1.0,
+          "failure_mechanism": "Activity-only instructions do not define a reviewable end state.",
+          "inference_level": "explicit",
+          "negative_example": null,
+          "positive_example": null,
+          "rationale": "The learner must know what artifact is evaluated while retaining the intended challenge.",
+          "recommended_behavior": "Name the observable output and acceptance boundary without commands.",
+          "review_status": "approved",
+          "schema_version": "sme-evidence/1",
+          "source_spans": [
+            {
+              "conversation_id": "conv_fixture_sme",
+              "end_char": 20,
+              "message_id": "msg_fixture_sme",
+              "redaction_labels": [],
+              "sanitized_excerpt": "approved fixture span",
+              "schema_version": "source-span/1",
+              "span_id": "span_fixture_sme",
+              "start_char": 0,
+              "text_hash": "sha256:9d4a534858bccb3cae4ddd27a665ae81a125d92140616123465adffd903a89a5"
+            }
+          ],
+          "supersedes": []
+        }
+      ],
+      "manifest": {
+        "bundle_id": "bundle_fixture_v1",
+        "content_hash": "sha256:6436cee5ed0b404fef3f685bcee85ccba081451a58e920bf9d92028c56c4594b",
+        "created_at": "2026-08-07T00:00:00+00:00",
+        "cutoff_at": "2026-08-07T00:00:00+00:00",
+        "domain_profile_id": "fixture-domain:v1",
+        "excluded_evidence": [],
+        "learner_cluster_ids": [],
+        "review_manifest": "fixture-reviews:v1",
+        "schema_version": "assessment-evidence-bundle/1",
+        "sme_evidence_ids": [
+          "sme_ev_fixture_observable"
+        ],
+        "split_manifest": "fixture-splits:v1",
+        "statistics": {
+          "distinct_learners": 0,
+          "distinct_smes": 1,
+          "learner_confusion_clusters": 0,
+          "sme_correction_pairs": 1,
+          "sme_positive_anchors": 0
+        },
+        "target_scope": [
+          "fixture-assessment-generator"
+        ]
+      }
+    },
+    "expected_behaviors": [
+      {
+        "dimension": "instruction_clarity",
+        "prohibited_phrases": [
+          "step-by-step solution"
+        ],
+        "required_phrases": [
+          "observable"
+        ]
+      },
+      {
+        "dimension": "sme_adaptation",
+        "required_phrases": [
+          "observable"
+        ]
+      },
+      {
+        "dimension": "assessment_utility",
+        "required_phrases": [
+          "scenario",
+          "REQUIRED-MARKER"
+        ]
+      },
+      {
+        "dimension": "objective_coverage",
+        "required_phrases": [
+          "analyze"
+        ]
+      }
+    ],
+    "expected_output": null,
+    "id": "fixture_test_2",
+    "metadata": {
+      "assessment_type": "scenario",
+      "level": "advanced",
+      "synthetic_fixture": true
+    },
+    "protected_behaviors": [
+      {
+        "id": "no-solution",
+        "required": true
+      },
+      {
+        "id": "required-marker",
+        "required": true
+      }
+    ],
+    "schema_version": "assessment-improver-benchmark/1",
+    "split": "test",
+    "split_group": "fixture-family-test-2",
+    "target_skill_envelope": {
+      "display_name": "Fixture Assessment Generator",
+      "domain_profile_id": "fixture-domain:v1",
+      "exact_skill_markdown": "---\nname: fixture-assessment-generator\ndescription: Generates domain-neutral scenario assessments for contract tests.\n---\n\n# Fixture Assessment Generator\n\n## Workflow\n\n1. Read the supplied objective and level.\n2. Create one scenario question.\n3. State the task without providing its answer.\n\n## Output Contract\n\nReturn a question, an evaluator-only rubric, and the phrase REQUIRED-MARKER.\n\n## Protected Policy\n\nDo not reveal answers, commands, or evaluator secrets to the learner.\n",
+      "immutable_sections": {
+        "Protected Policy": "sha256:7e9e5b9c3392ee0cd359497f84df51e8452035cf15ae7551cbf7a862124e9002"
+      },
+      "input_content_hash": "sha256:4aef9c45513379f807f07cde49d96e38689d1a4a9988a6c66ae84e99166e9d81",
+      "input_contract": {
+        "required": [
+          "objective",
+          "level"
+        ]
+      },
+      "input_version": "v1",
+      "metadata": {
+        "synthetic_fixture": true
+      },
+      "output_contract": {
+        "required_literals": [
+          "REQUIRED-MARKER"
+        ]
+      },
+      "owner": "fixture-owner",
+      "permitted_change_areas": [
+        "Workflow"
+      ],
+      "protected_behaviors": [
+        {
+          "description": "No learner-facing solution",
+          "id": "no-solutions"
+        }
+      ],
+      "reference_contracts": [],
+      "required_frontmatter": {
+        "description": {
+          "immutable": false,
+          "required": true,
+          "type": "string"
+        },
+        "name": {
+          "immutable": true,
+          "required": true,
+          "type": "string"
+        }
+      },
+      "required_sections": [
+        "Workflow",
+        "Output Contract",
+        "Protected Policy"
+      ],
+      "rollback": {
+        "owner": "fixture-owner",
+        "previous_version": "v1"
+      },
+      "schema_version": "target-assessment-skill-envelope/1",
+      "script_contracts": [],
+      "status": "staging",
+      "target_skill_id": "fixture-assessment-generator",
+      "tool_contracts": [],
+      "validators": [
+        {
+          "id": "fixture-contract-validator",
+          "version": "1"
+        }
+      ]
+    }
+  }
+]
