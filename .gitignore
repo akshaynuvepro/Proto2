@@ -1,90 +1,37 @@
-# --- Secrets & local env ---
+# --- Secrets ---
 .env
 .env.*
 !.env.example
 *.pem
 *.key
-*.p12
-*.pfx
-credentials.json
-secrets.json
-.secrets/
-**/local.settings.json
 
-# --- Runtime / generated data (private conversations + evolved skills) ---
+# --- Local runtime / experiment artifacts (do not ship) ---
 data/
-conversations/
+.chainlit/
+.files/
 *.conversations.json
-
-# Local capture / agent home dirs if ever created inside the repo
-.proto-capture/
-.tokentopper/
 
 # --- Python ---
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
 .Python
 .venv/
 venv/
-ENV/
-env/
-.python-version.bak
-*.egg
 *.egg-info/
 .eggs/
 dist/
 build/
-pip-wheel-metadata/
-share/python-wheels/
-*.manifest
-*.spec
-.pip-audit-cache/
-
-# Test / type / lint caches
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-.pytype/
-.dmypy.json
-dmypy.json
-.pyre/
-.tox/
-.nox/
 .coverage
-.coverage.*
 htmlcov/
-coverage.xml
-*.cover
-.hypothesis/
-.cache/
-nosetests.xml
+.pip-audit-cache/
 
-# Jupyter / notebooks
-.ipynb_checkpoints/
-*.ipynb_checkpoints
-
-# uv / packaging scratch (keep uv.lock tracked)
+# --- uv ---
 uv-cache/
 .uv/
-
-# --- Node (capture MCP package) ---
-node_modules/
-capture/node_modules/
-capture/dist/
-**/npm-debug.log*
-**/yarn-debug.log*
-**/yarn-error.log*
-**/pnpm-debug.log*
-**/.npm/
-**/.yarn/
-**/.pnp.*
-**/.turbo/
-*.tsbuildinfo
-*.tgz
-standalone-artifacts/
-release-artifacts/
 
 # --- Logs & temp ---
 *.log
@@ -93,47 +40,16 @@ tmp/
 temp/
 .tmp/
 *.tmp
-*.temp
-tmp-worker-*.txt
-*.swp
-*.swo
 *~
 
-# --- OS ---
+# --- OS / editors ---
 .DS_Store
-.AppleDouble
-.LSOverride
 Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-*.lnk
-
-# --- Editors / IDEs ---
 .idea/
-*.iml
-*.sublime-project
-*.sublime-workspace
 .vscode/*
 !.vscode/extensions.json
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-
-# Cursor: keep project MCP/hooks config; ignore local/debug junk
 .cursor/*
 !.cursor/mcp.json
 !.cursor/hooks.json
 !.cursor/rules/
 !.cursor/rules/**
-
-# --- Misc ---
-*.bak
-*.orig
-*.rej
-.direnv/
-.fleet/
-.history/
-
-skills-mcp/node_modules/
-skills-mcp/dist/
