@@ -7,7 +7,8 @@
 
 # --- Local runtime / experiment artifacts (do not ship) ---
 data/
-.chainlit/
+.chainlit/*
+!.chainlit/config.toml
 .files/
 *.conversations.json
 
@@ -48,6 +49,8 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
 .cursor/*
 !.cursor/mcp.json
 !.cursor/hooks.json

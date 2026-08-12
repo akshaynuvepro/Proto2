@@ -62,15 +62,15 @@ class RunStore:
         self.mark_step(folder, {"files": list(package.files), "summary": package.summary})
         return base
 
-    def save_generated(self, items: list[Assessment]) -> Path:
-        # path() mkdirs parents of the *file*; use write_text so 04-generated/ exists.
+    def save_generated(self, items: list[Assessment], folder: str = "04-generated") -> Path:
+        # path() mkdirs parents of the *file*; use write_text so the folder exists.
         for a in items:
-            self.write_text(f"04-generated/{a.id}.md", f"# {a.title}\n\n{a.body}\n")
-        return self.write_json("04-generated/index.json", [a.to_dict() for a in items])
+            self.write_text(f"{folder}/{a.id}.md", f"# {a.title}\n\n{a.body}\n")
+        return self.write_json(f"{folder}/index.json", [a.to_dict() for a in items])
 
-    def save_comparison(self, report: dict[str, Any]) -> Path:
-        self.write_text("05-comparison/summary.md", str(report.get("summary_markdown") or ""))
-        return self.write_json("05-comparison/report.json", report)
+    def save_comparison(self, report: dict[str, Any], folder: str = "05-comparison") -> Path:
+        self.write_text(f"{folder}/summary.md", str(report.get("summary_markdown") or ""))
+        return self.write_json(f"{folder}/report.json", report)
 
     def save_improver(self, text: str) -> Path:
         return self.write_text("06-improver/IMPROVER_SKILL.md", text)
@@ -78,6 +78,13 @@ class RunStore:
     def mark_step(self, name: str, meta: dict[str, Any] | None = None) -> None:
         m = json.loads(self.manifest_path.read_text(encoding="utf-8"))
         m["steps"][name] = {"at": _utc(), **(meta or {})}
+        m["updated_at"] = _utc()
+        self.manifest_path.write_text(json.dumps(m, indent=2), encoding="utf-8")
+
+    def set_meta(self, key: str, value: Any) -> None:
+        """Write a top-level manifest field (e.g. skill lineage)."""
+        m = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        m[key] = value
         m["updated_at"] = _utc()
         self.manifest_path.write_text(json.dumps(m, indent=2), encoding="utf-8")
 

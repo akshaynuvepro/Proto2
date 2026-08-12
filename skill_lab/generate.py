@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 from openrouter import OpenRouterSettings, chat_completions
 
 from .models import Assessment, SkillPackage
+
+ProgressCb = Callable[[int, int, str], None]
 
 
 def _topics_from_train(train: list[Assessment], n: int) -> list[str]:
@@ -21,6 +23,8 @@ def generate_assessments(
     train: list[Assessment] | None = None,
     count: int = 10,
     settings: OpenRouterSettings | None = None,
+    id_prefix: str = "gen",
+    progress_cb: ProgressCb | None = None,
 ) -> tuple[list[Assessment], list[dict[str, Any]]]:
     use_topics = topics or _topics_from_train(train or [], count)
     if len(use_topics) < count:
@@ -45,16 +49,18 @@ def generate_assessments(
                 {
                     "role": "user",
                     "content": (
-                        f"Write assessment {i} of {count}. "
+                        "Write one complete assessment. "
                         f"Topic / title inspiration: {topic}. "
-                        "Make it distinct from other generations but same house style."
+                        "Make it distinct from other assessments in this set but keep the same "
+                        "house style. Do not include collection or sequence numbering "
+                        "(such as 'Assessment 3 of 10') in the title."
                     ),
                 },
             ],
             settings=settings,
             max_tokens=6000,
         )
-        aid = f"gen_{i:02d}"
+        aid = f"{id_prefix}_{i:02d}"
         title = topic.strip()[:120] or aid
         # Prefer first markdown H1 if present
         for line in text.splitlines():
@@ -63,4 +69,9 @@ def generate_assessments(
                 break
         out.append(Assessment(id=aid, title=title, body=text.strip(), source="generated"))
         metas.append(meta)
+        if progress_cb is not None:
+            try:
+                progress_cb(i, count, title)
+            except Exception:  # noqa: BLE001 — progress display must never break generation
+                pass
     return out, metas
